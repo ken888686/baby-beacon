@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 使用者
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  role  Role    @default(USER) // 使用 Enum 管理權限
+
+  // one to many
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// 定義使用者權限
+enum Role {
+  USER
+  ADMIN
+}
+
+// 地點類別 (如：醫療、購物、公園)
+model Category {
+  id       Int     @id @default(autoincrement())
+  slug     String  @unique // 用於 URL 路由，例如 'medical'
+  name     String // 顯示名稱，例如 '醫療設施'
+  iconName String? // 前端 Icon 對應字串
+
+  // many to many
+  spots Spot[]
+
+  @@map("categories")
+}
+
+// 核心地點資料 (MVP 核心)
+model Spot {
+  id            Int     @id @default(autoincrement())
+  name          String
+  description   String?
+  address       String?
+  lat           Float
+  lng           Float
+  url           String?
+  googlePlaceId String? @map("google_place_id") // 方便未來對照 Google Map
+
+  // many to one
+  categoryId Int      @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  // many to many
+  facilities Facility[]
+
+  // one to many
+  notes Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lat, lng]) // 建立索引以優化地圖範圍搜尋
+  @@map("spots") // 資料庫表名建議用複數小寫
+}
+
+// 設施功能標籤 (如：哺乳室、熱水)
+model Facility {
+  id    Int    @id @default(autoincrement())
+  code  String @unique // 程式邏輯用，例如 'nursing_room'
+  label String // 顯示用，例如 '哺乳室'
+
+  // many to many
+  spots Spot[]
+
+  @@map("facilities")
+}
+
+// 個人筆記/評論
+model Note {
+  id        Int     @id @default(autoincrement())
+  content   String
+  isPrivate Boolean @default(true) @map("is_private")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
+
+  spotId Int  @map("spot_id")
+  spot   Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notes")
+}
