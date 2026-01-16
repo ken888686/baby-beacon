@@ -89,7 +89,7 @@ model Note {
   isPrivate Boolean @default(true) @map("is_private")
 
   userId Int  @map("user_id")
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   spotId Int  @map("spot_id")
   spot   Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)

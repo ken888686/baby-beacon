@@ -82,43 +82,17 @@ export async function main() {
       console.log("users already exist");
     });
 
-  console.log("checking facilities...");
-  await prisma.facility
-    .findMany({
-      select: { code: true },
-      where: {
-        code: {
-          in: facilitiesData.map((f) => f.code),
-        },
-      },
-    })
-    .then(async (data) => {
-      if (data.length === 0) {
-        console.log("inserting facilities...");
-        await prisma.facility.createMany({
-          data: facilitiesData,
-        });
-      }
-    });
+  console.log("inserting facilities...");
+  await prisma.facility.createMany({
+    data: facilitiesData,
+    skipDuplicates: true,
+  });
 
-  console.log("checking categories...");
-  await prisma.category
-    .findMany({
-      select: { slug: true },
-      where: {
-        slug: {
-          in: categoriesData.map((c) => c.slug),
-        },
-      },
-    })
-    .then(async (data) => {
-      if (data.length === 0) {
-        console.log("inserting categories...");
-        await prisma.category.createMany({
-          data: categoriesData,
-        });
-      }
-    });
+  console.log("inserting categories...");
+  await prisma.category.createMany({
+    data: categoriesData,
+    skipDuplicates: true,
+  });
 
   console.log("checking spots...");
   await prisma.spot
