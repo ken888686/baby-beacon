@@ -1,10 +1,10 @@
-import { PrismaClient, Role } from "@/app/generated/prisma/client";
+import { PrismaClient, Role } from "@/lib/generated/prisma/client";
 import {
   CategoryCreateInput,
   FacilityCreateInput,
   SpotCreateWithoutNotesInput,
   UserCreateInput,
-} from "@/app/generated/prisma/models";
+} from "@/lib/generated/prisma/models";
 import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
 
