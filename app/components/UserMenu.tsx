@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { LogOut, User } from "lucide-react";
 
@@ -15,9 +16,7 @@ export function UserMenu() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
-    return (
-      <div className="bg-secondary/30 h-9 w-9 animate-pulse rounded-full" />
-    );
+    return <UserMenuLoader />;
   }
 
   if (!session) {
@@ -26,10 +25,9 @@ export function UserMenu() {
         variant="outline"
         size="sm"
         onClick={() => signIn.social({ provider: "google" })}
-        className="border-primary/20 bg-background text-primary hover:bg-primary/5 hover:text-primary gap-2 rounded-full"
+        className="border-primary/20 bg-background text-primary hover:bg-primary/5 hover:text-primary h-14 w-14 rounded-full"
       >
-        <User className="h-4 w-4" />
-        <span className="hidden sm:inline">Sign In</span>
+        <User />
       </Button>
     );
   }
@@ -37,8 +35,8 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="border-background h-9 w-9 border-2 shadow-sm">
+        <Button variant="ghost" className="w-12">
+          <Avatar className="border-background h-12 w-12 border-2 shadow-sm">
             <AvatarImage
               src={session.user.image || ""}
               alt={session.user.name || "User"}
@@ -69,4 +67,8 @@ export function UserMenu() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+export function UserMenuLoader() {
+  return <Skeleton className="h-14 w-14 rounded-full" />;
 }

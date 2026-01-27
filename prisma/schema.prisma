@@ -14,7 +14,7 @@ model User {
   name  String?
   image String?
 
-  babies Baby[] // 一個使用者可以照顧多個寶寶
+  babies UserBaby[] // 多對多關聯：使用者管理的寶寶們
 
   emailVerified Boolean   @default(false)
   sessions      Session[]
@@ -82,6 +82,23 @@ model Verification {
   @@map("verification")
 }
 
+// 1.5 使用者與寶寶的關聯 (Join Table)
+model UserBaby {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  role BabyRole @default(OWNER) // 權限角色
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, babyId])
+  @@map("users_babies")
+}
+
 // 2. 寶寶
 model Baby {
   id        String   @id @default(uuid())
@@ -91,8 +108,7 @@ model Baby {
   photoUrl  String?
 
   // 關聯
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
+  users UserBaby[] // 多對多關聯：照顧這個寶寶的使用者們
 
   // 各類記錄關聯
   growthRecords GrowthRecord[]
@@ -199,6 +215,12 @@ model DiaperLog {
 }
 
 // Enums
+
+enum BabyRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
 
 enum Gender {
   MALE

@@ -18,7 +18,13 @@ import { Baby } from "../generated/prisma/client";
 
 export function BabySwitcher({ babies }: { babies: Promise<Baby[]> }) {
   const allBabies = use(babies);
-  const [selectedBaby, setSelectedBaby] = useState(allBabies[0]);
+  const [selectedBaby, setSelectedBaby] = useState(
+    allBabies[0] ?? {
+      id: "1",
+      name: "Taro Sato",
+      users: [],
+    },
+  );
 
   return (
     <DropdownMenu>

@@ -1,7 +1,15 @@
 "use server";
 
+import {
+  DiaperLog,
+  FeedLog,
+  FeedType,
+  GrowthRecord,
+  HealthLog,
+  HealthType,
+  SleepLog,
+} from "@/app/generated/prisma/client";
 import prisma from "@/lib/prisma";
-import { FeedType, HealthType, DiaperType } from "@/app/generated/prisma/client";
 
 export type TimelineItem = {
   id: string;
@@ -9,37 +17,41 @@ export type TimelineItem = {
   title: string;
   details: string;
   recordedAt: Date;
-  metadata: any; // 保留原始資料
+  metadata?: SleepLog | FeedLog | DiaperLog | HealthLog | GrowthRecord;
 };
 
-export async function getTimeline(babyId: string, limit = 20): Promise<TimelineItem[]> {
-  const [sleepLogs, feedLogs, diaperLogs, healthLogs, growthRecords] = await Promise.all([
-    prisma.sleepLog.findMany({
-      where: { babyId },
-      orderBy: { startTime: "desc" },
-      take: limit,
-    }),
-    prisma.feedLog.findMany({
-      where: { babyId },
-      orderBy: { recordedAt: "desc" },
-      take: limit,
-    }),
-    prisma.diaperLog.findMany({
-      where: { babyId },
-      orderBy: { recordedAt: "desc" },
-      take: limit,
-    }),
-    prisma.healthLog.findMany({
-      where: { babyId },
-      orderBy: { recordedAt: "desc" },
-      take: limit,
-    }),
-    prisma.growthRecord.findMany({
-      where: { babyId },
-      orderBy: { recordedAt: "desc" },
-      take: limit,
-    }),
-  ]);
+export async function getTimeline(
+  babyId: string,
+  limit = 20,
+): Promise<TimelineItem[]> {
+  const [sleepLogs, feedLogs, diaperLogs, healthLogs, growthRecords] =
+    await Promise.all([
+      prisma.sleepLog.findMany({
+        where: { babyId },
+        orderBy: { startTime: "desc" },
+        take: limit,
+      }),
+      prisma.feedLog.findMany({
+        where: { babyId },
+        orderBy: { recordedAt: "desc" },
+        take: limit,
+      }),
+      prisma.diaperLog.findMany({
+        where: { babyId },
+        orderBy: { recordedAt: "desc" },
+        take: limit,
+      }),
+      prisma.healthLog.findMany({
+        where: { babyId },
+        orderBy: { recordedAt: "desc" },
+        take: limit,
+      }),
+      prisma.growthRecord.findMany({
+        where: { babyId },
+        orderBy: { recordedAt: "desc" },
+        take: limit,
+      }),
+    ]);
 
   const timeline: TimelineItem[] = [];
 
@@ -48,7 +60,7 @@ export async function getTimeline(babyId: string, limit = 20): Promise<TimelineI
     const duration = log.endTime
       ? `${Math.round((log.endTime.getTime() - log.startTime.getTime()) / (1000 * 60))}m`
       : "Sleeping...";
-    
+
     timeline.push({
       id: log.id,
       category: "SLEEP",
@@ -63,7 +75,7 @@ export async function getTimeline(babyId: string, limit = 20): Promise<TimelineI
   feedLogs.forEach((log) => {
     let title = "Feed";
     let details = "";
-    
+
     switch (log.type) {
       case FeedType.BREAST:
         title = "Breast Feed";
@@ -164,5 +176,7 @@ export async function getTimeline(babyId: string, limit = 20): Promise<TimelineI
   });
 
   // Sort by recordedAt desc
-  return timeline.sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime()).slice(0, limit);
+  return timeline
+    .sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())
+    .slice(0, limit);
 }

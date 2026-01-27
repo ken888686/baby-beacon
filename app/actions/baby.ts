@@ -13,11 +13,16 @@ export async function createBaby(data: {
 }) {
   const baby = await prisma.baby.create({
     data: {
-      userId: data.userId,
       name: data.name,
       birthDate: data.birthDate,
       gender: data.gender,
       photoUrl: data.photoUrl,
+      users: {
+        create: {
+          userId: data.userId,
+          role: "OWNER",
+        },
+      },
     },
   });
 
@@ -27,7 +32,13 @@ export async function createBaby(data: {
 
 export async function getBabies(userId: string) {
   return await prisma.baby.findMany({
-    where: { userId },
+    where: {
+      users: {
+        some: {
+          userId: userId,
+        },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
 }
