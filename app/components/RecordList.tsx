@@ -1,16 +1,27 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, Ruler, Thermometer } from "lucide-react";
+import { Activity, Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
+import {
+  DiaperLog,
+  FeedLog,
+  GrowthRecord,
+  HealthLog,
+  SleepLog,
+} from "../generated/prisma/client";
 
-type HealthRecord = {
+// 定義前端顯示用的通用紀錄型別
+// 這裡將 Prisma 的多個 Model 整合為一個 UI 介面
+export type TimelineRecord = {
   id: string;
-  type: "Temperature" | "Growth" | "Symptom";
-  value: string;
+  category: "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
+  title: string; // 主標題 (e.g. "Breast Feed", "Sleep")
+  details: string; // 詳細資訊 (e.g. "Left side, 15m", "36.6°C")
   recordedAt: Date;
+  metadata?: SleepLog | FeedLog | DiaperLog | HealthLog | GrowthRecord; // 保留原始資料供進階顯示
 };
 
 interface RecordListProps {
-  records: HealthRecord[];
+  records: TimelineRecord[];
 }
 
 export function RecordList({ records }: RecordListProps) {
@@ -22,14 +33,37 @@ export function RecordList({ records }: RecordListProps) {
     );
   }
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "Temperature":
-        return Thermometer;
-      case "Growth":
+  const getIcon = (category: string) => {
+    switch (category) {
+      case "SLEEP":
+        return Moon;
+      case "FEED":
+        return Milk;
+      case "DIAPER":
+        return Baby;
+      case "HEALTH":
+        return Thermometer; // 或 Syringe 視情況而定
+      case "GROWTH":
         return Ruler;
       default:
         return Activity;
+    }
+  };
+
+  const getIconColor = (category: string) => {
+    switch (category) {
+      case "SLEEP":
+        return "bg-indigo-100 text-indigo-600";
+      case "FEED":
+        return "bg-orange-100 text-orange-600";
+      case "DIAPER":
+        return "bg-teal-100 text-teal-600";
+      case "HEALTH":
+        return "bg-red-100 text-red-600";
+      case "GROWTH":
+        return "bg-blue-100 text-blue-600";
+      default:
+        return "bg-gray-100 text-gray-600";
     }
   };
 
@@ -38,18 +72,25 @@ export function RecordList({ records }: RecordListProps) {
       <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
       <div className="space-y-3">
         {records.map((record) => {
-          const Icon = getIcon(record.type);
+          const Icon = getIcon(record.category);
+          const colorClass = getIconColor(record.category);
+
           return (
-            <Card key={record.id} className="border-secondary/30 shadow-sm">
+            <Card
+              key={record.id}
+              className="border-secondary/30 hover:bg-secondary/5 shadow-sm transition-colors"
+            >
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="bg-secondary/30 text-foreground rounded-full p-2">
+                <div className={`rounded-full p-2.5 ${colorClass}`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold">{record.type}</p>
-                  <p className="text-sm opacity-70">{record.value}</p>
+                  <p className="text-foreground font-semibold">
+                    {record.title}
+                  </p>
+                  <p className="text-sm opacity-70">{record.details}</p>
                 </div>
-                <span className="text-xs font-medium opacity-50">
+                <span className="text-xs font-medium whitespace-nowrap opacity-50">
                   {formatDistanceToNow(record.recordedAt, { addSuffix: true })}
                 </span>
               </CardContent>

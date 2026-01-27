@@ -11,27 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import * as React from "react";
+import { use, useState } from "react";
+import { Baby } from "../generated/prisma/client";
 
-// Mock data for babies
-const babies = [
-  {
-    id: "1",
-    name: "Liam",
-    avatarUrl: "https://api.dicebear.com/9.x/avataaars/svg?seed=Liam",
-    initials: "LM",
-  },
-  {
-    id: "2",
-    name: "Olivia",
-    avatarUrl: "https://api.dicebear.com/9.x/avataaars/svg?seed=Olivia",
-    initials: "OL",
-  },
-];
-
-export function BabySwitcher() {
-  const [selectedBaby, setSelectedBaby] = React.useState(babies[0]);
+export function BabySwitcher({ babies }: { babies: Promise<Baby[]> }) {
+  const allBabies = use(babies);
+  const [selectedBaby, setSelectedBaby] = useState(allBabies[0]);
 
   return (
     <DropdownMenu>
@@ -44,11 +31,11 @@ export function BabySwitcher() {
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
               <AvatarImage
-                src={selectedBaby.avatarUrl}
+                src={selectedBaby.photoUrl ?? ""}
                 alt={selectedBaby.name}
               />
               <AvatarFallback className="bg-primary/10 text-primary">
-                {selectedBaby.initials}
+                {selectedBaby.name[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start text-left">
@@ -68,15 +55,15 @@ export function BabySwitcher() {
           Switch Baby
         </DropdownMenuLabel>
         <DropdownMenuGroup>
-          {babies.map((baby) => (
+          {allBabies.map((baby) => (
             <DropdownMenuItem
               key={baby.id}
               onSelect={() => setSelectedBaby(baby)}
               className="focus:bg-secondary/30 flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2"
             >
               <Avatar className="h-8 w-8 border border-white">
-                <AvatarImage src={baby.avatarUrl} alt={baby.name} />
-                <AvatarFallback>{baby.initials}</AvatarFallback>
+                <AvatarImage src={baby.photoUrl ?? ""} alt={baby.name} />
+                <AvatarFallback>{baby.name[0].toUpperCase()}</AvatarFallback>
               </Avatar>
               <span className="flex-1 font-medium">{baby.name}</span>
               {selectedBaby.id === baby.id && (
@@ -94,5 +81,13 @@ export function BabySwitcher() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export function BabySwitcherLoader() {
+  return (
+    <div className="w-[280px]">
+      <Skeleton className="h-14 w-full rounded-full" />
+    </div>
   );
 }
