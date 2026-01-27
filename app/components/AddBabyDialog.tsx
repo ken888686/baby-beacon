@@ -27,16 +27,11 @@ import { toast } from "sonner"; // 假設有安裝 sonner，若無則改用 cons
 import { createBaby } from "../actions/baby";
 
 interface AddBabyDialogProps {
-  userId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddBabyDialog({
-  userId,
-  open,
-  onOpenChange,
-}: AddBabyDialogProps) {
+export function AddBabyDialog({ open, onOpenChange }: AddBabyDialogProps) {
   const [birthDate, setBirthDate] = useState<Date>();
   const [isPending, startTransition] = useTransition();
 

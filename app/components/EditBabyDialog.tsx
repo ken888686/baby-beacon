@@ -1,6 +1,17 @@
 "use client";
 
-import { Gender, Baby } from "@/app/generated/prisma/client";
+import { Baby, Gender } from "@/app/generated/prisma/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -22,20 +33,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { updateBaby, deleteBaby } from "../actions/baby";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { deleteBaby, updateBaby } from "../actions/baby";
 
 interface EditBabyDialogProps {
   baby: Baby;
@@ -52,13 +52,6 @@ export function EditBabyDialog({
     new Date(baby.birthDate),
   );
   const [isPending, startTransition] = useTransition();
-
-  // Reset state when dialog opens with a new baby
-  useEffect(() => {
-    if (open) {
-      setBirthDate(new Date(baby.birthDate));
-    }
-  }, [open, baby]);
 
   async function handleUpdate(formData: FormData) {
     const name = formData.get("name") as string;
@@ -112,12 +105,7 @@ export function EditBabyDialog({
           <div className="grid gap-6 py-6">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                defaultValue={baby.name}
-                name="name"
-                required
-              />
+              <Input id="name" defaultValue={baby.name} name="name" required />
             </div>
             <div className="grid gap-2">
               <Label>Birth Date</Label>
@@ -189,7 +177,8 @@ export function EditBabyDialog({
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete{" "}
-                    <span className="font-bold">{baby.name}</span> and all associated data.
+                    <span className="font-bold">{baby.name}</span> and all
+                    associated data.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

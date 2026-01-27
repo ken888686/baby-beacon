@@ -78,7 +78,7 @@ export default async function Home() {
   return (
     <main className="bg-background min-h-screen">
       <div className="mx-auto max-w-md space-y-8 px-4 py-2">
-        <Header userId={session?.user.id ?? ""} currentBabyId={currentBabyId} />
+        <Header currentBabyId={currentBabyId} />
 
         {/* Status Section */}
         <section className="space-y-4">

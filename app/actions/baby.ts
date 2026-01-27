@@ -98,7 +98,7 @@ export async function updateBaby(
 
 export async function deleteBaby(babyId: string) {
   await verifyBabyAccess(babyId, BabyRole.OWNER);
-  
+
   await prisma.baby.delete({
     where: { id: babyId },
   });

@@ -21,11 +21,9 @@ import { EditBabyDialog } from "./EditBabyDialog";
 
 export function BabySwitcher({
   babies,
-  userId,
   currentBabyId,
 }: {
   babies: Promise<Baby[]>;
-  userId: string;
   currentBabyId?: string;
 }) {
   const allBabies = use(babies);
@@ -59,7 +57,8 @@ export function BabySwitcher({
           <Button
             variant="outline"
             role="combobox"
-            className="border-secondary/50 hover:border-primary/30 h-14 w-full max-w-[280px] justify-between rounded-full bg-white/50 px-4 shadow-sm backdrop-blur-sm transition-all hover:bg-white/80"
+            disabled={isPending}
+            className="border-secondary/50 hover:border-primary/30 h-14 w-full max-w-[280px] justify-between rounded-full bg-white/50 px-4 shadow-sm backdrop-blur-sm transition-all hover:bg-white/80 disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9 border-2 border-white shadow-sm">
@@ -73,7 +72,7 @@ export function BabySwitcher({
               </Avatar>
               <div className="flex flex-col items-start text-left">
                 <span className="text-muted-foreground text-xs font-medium">
-                  Watching
+                  {isPending ? "Switching..." : "Watching"}
                 </span>
                 <span className="text-foreground text-base leading-none font-bold">
                   {selectedBaby.name}
@@ -139,14 +138,11 @@ export function BabySwitcher({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AddBabyDialog
-        userId={userId}
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-      />
+      <AddBabyDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
 
       {editingBaby && (
         <EditBabyDialog
+          key={editingBaby.id}
           baby={editingBaby}
           open={!!editingBaby}
           onOpenChange={(open) => !open && setEditingBaby(null)}
