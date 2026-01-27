@@ -91,21 +91,21 @@ export function BabySwitcher({
           </DropdownMenuLabel>
           <DropdownMenuGroup>
             {allBabies.map((baby) => (
-              <div
+              <DropdownMenuItem
                 key={baby.id}
-                className="focus-within:bg-secondary/30 hover:bg-secondary/30 flex items-center gap-2 rounded-xl px-2 py-2 transition-colors"
+                className="focus:bg-secondary/30 focus:text-foreground hover:bg-secondary/30 flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 transition-colors"
+                onSelect={() => handleBabySelect(baby)}
               >
-                <div
-                  className="flex flex-1 cursor-pointer items-center gap-3"
-                  onClick={() => handleBabySelect(baby)}
-                >
+                <div className="flex flex-1 items-center gap-3">
                   <Avatar className="h-8 w-8 border border-white">
                     <AvatarImage src={baby.photoUrl ?? ""} alt={baby.name} />
                     <AvatarFallback>
                       {baby.name[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="flex-1 font-medium">{baby.name}</span>
+                  <span className="flex-1 text-base font-medium">
+                    {baby.name}
+                  </span>
                   {selectedBaby.id === baby.id && (
                     <Check className="text-primary h-4 w-4" />
                   )}
@@ -113,16 +113,17 @@ export function BabySwitcher({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hover:bg-background h-6 w-6 rounded-full opacity-50 hover:opacity-100"
+                  className="hover:bg-background z-10 h-8 w-8 rounded-full opacity-50 hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingBaby(baby);
                   }}
+                  onSelect={(e) => e.preventDefault()}
                 >
-                  <Settings className="h-3 w-3" />
+                  <Settings className="h-4 w-4" />
                   <span className="sr-only">Settings</span>
                 </Button>
-              </div>
+              </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="bg-border/50 my-2" />

@@ -25,6 +25,7 @@ export default function LoginPage() {
       });
     } catch (error) {
       toast.error("Failed to login with Google");
+      console.error(error);
       setLoading(false);
     }
   };
