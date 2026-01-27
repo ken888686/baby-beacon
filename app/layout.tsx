@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${varelaRound.variable} ${nunitoSans.variable} antialiased bg-background text-text-main`}
+        className={`${varelaRound.variable} ${nunitoSans.variable} bg-background text-text-main antialiased`}
       >
         {children}
       </body>

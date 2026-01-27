@@ -5,33 +5,33 @@
 
 :root {
   /* Baby Beacon Design System Colors - Mapped to Shadcn variables */
-  --background: #FDF2F8;
-  --foreground: #9D174D;
-  
+  --background: #fdf2f8;
+  --foreground: #9d174d;
+
   --card: #ffffff;
-  --card-foreground: #9D174D;
-  
+  --card-foreground: #9d174d;
+
   --popover: #ffffff;
-  --popover-foreground: #9D174D;
-  
-  --primary: #F472B6;
+  --popover-foreground: #9d174d;
+
+  --primary: #f472b6;
   --primary-foreground: #ffffff;
-  
-  --secondary: #FBCFE8;
-  --secondary-foreground: #9D174D;
-  
-  --muted: #FFF0F5;
-  --muted-foreground: #9D174D; /* Opacity handled by utils if needed, or stick to solid */
-  
-  --accent: #FBCFE8;
-  --accent-foreground: #9D174D;
-  
+
+  --secondary: #fbcfe8;
+  --secondary-foreground: #9d174d;
+
+  --muted: #fff0f5;
+  --muted-foreground: #9d174d; /* Opacity handled by utils if needed, or stick to solid */
+
+  --accent: #fbcfe8;
+  --accent-foreground: #9d174d;
+
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  
-  --border: #FBCFE8;
-  --input: #FBCFE8;
-  --ring: #F472B6;
+
+  --border: #fbcfe8;
+  --input: #fbcfe8;
+  --ring: #f472b6;
 
   --radius: 0.75rem; /* Rounded corners for soft UI */
 
@@ -41,15 +41,15 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  
-  --sidebar: #FDF2F8;
-  --sidebar-foreground: #9D174D;
-  --sidebar-primary: #F472B6;
+
+  --sidebar: #fdf2f8;
+  --sidebar-foreground: #9d174d;
+  --sidebar-primary: #f472b6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #FBCFE8;
-  --sidebar-accent-foreground: #9D174D;
-  --sidebar-border: #FBCFE8;
-  --sidebar-ring: #F472B6;
+  --sidebar-accent: #fbcfe8;
+  --sidebar-accent-foreground: #9d174d;
+  --sidebar-border: #fbcfe8;
+  --sidebar-ring: #f472b6;
 
   /* Custom Font Variables */
   --font-display: var(--font-varela);
@@ -89,7 +89,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
-  
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -106,7 +106,12 @@ body {
   font-family: var(--font-body), sans-serif;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-display), sans-serif;
 }
 

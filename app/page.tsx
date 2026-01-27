@@ -22,8 +22,8 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-background pb-20">
-      <div className="max-w-md mx-auto px-4 space-y-8">
+    <main className="bg-background min-h-screen">
+      <div className="mx-auto max-w-md space-y-8 px-4">
         <Header />
 
         {/* Status Section */}
@@ -34,21 +34,21 @@ export default function Home() {
               value="2h 15m"
               subValue="Woke up 10m ago"
               icon={Moon}
-              colorClass="bg-indigo-50/50 border-indigo-100 text-indigo-900"
+              className="border-indigo-100 bg-indigo-50/50 text-indigo-900"
             />
             <StatusCard
               title="Last Feed"
               value="120ml"
               subValue="2h ago"
               icon={Milk}
-              colorClass="bg-orange-50/50 border-orange-100 text-orange-900"
+              className="border-orange-100 bg-orange-50/50 text-orange-900"
             />
           </div>
         </section>
 
         {/* Quick Actions */}
         <section>
-          <h2 className="text-lg font-bold text-text-main mb-4 px-1">
+          <h2 className="text-text-main mb-4 px-1 text-lg font-bold">
             Quick Actions
           </h2>
           <div className="grid grid-cols-3 gap-3">

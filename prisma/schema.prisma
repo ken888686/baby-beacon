@@ -7,13 +7,39 @@ datasource db {
   provider = "postgresql"
 }
 
+// 1. 使用者 (Parents/Caregivers)
+model User {
+  id    String  @id @default(uuid())
+  email String  @unique
+  name  String?
+  image String?
+
+  babies Baby[] // 一個使用者可以照顧多個寶寶
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// 2. 寶寶
 model Baby {
   id        String   @id @default(uuid())
   name      String
   birthDate DateTime
+  gender    Gender
+  photoUrl  String?
 
-  gender  Gender
-  records HealthRecord[]
+  // 關聯
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  // 各類記錄關聯
+  growthRecords GrowthRecord[]
+  healthLogs    HealthLog[]
+  sleepLogs     SleepLog[]
+  feedLogs      FeedLog[]
+  diaperLogs    DiaperLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -21,31 +47,128 @@ model Baby {
   @@map("babies")
 }
 
-model HealthRecord {
-  id String @id @default(uuid())
-
+// 3. 生長曲線 (身高/體重/頭圍)
+model GrowthRecord {
+  id     String @id @default(uuid())
   babyId String
-  baby   Baby   @relation(fields: [babyId], references: [id])
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
 
-  // 生長指標
-  height            Float? // 身高 (cm)
-  weight            Float? // 體重 (kg)
-  headCircumference Float? // 頭圍 (cm)
+  height            Float? // cm
+  weight            Float? // kg
+  headCircumference Float? // cm
 
-  // 健康狀態
-  temperature Float? // 體溫 (°C)
-  symptoms    String[] // 症狀 (e.g., ["發燒", "咳嗽"])
-
-  note       String? // 備註
   recordedAt DateTime @default(now())
+  note       String?
+
+  // 索引優化：快速查詢特定寶寶的生長歷史
+  @@index([babyId, recordedAt(sort: Desc)])
+  @@map("growth_records")
+}
+
+// 4. 健康紀錄 (體溫/疫苗/用藥/症狀)
+model HealthLog {
+  id     String @id @default(uuid())
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  type        HealthType // VACCINE, MEDICINE, TEMPERATURE, SYMPTOM
+  value       Float? // 數值 (例如體溫 37.5)
+  description String? // 描述 (例如 "卡介苗", "退燒藥")
+  symptoms    String[] // 症狀標籤陣列
+
+  recordedAt DateTime @default(now())
+  note       String?
+
+  @@index([babyId, recordedAt(sort: Desc)])
+  @@map("health_logs")
+}
+
+// 5. 睡眠紀錄
+model SleepLog {
+  id     String @id @default(uuid())
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  startTime DateTime
+  endTime   DateTime? // null 代表「正在睡」
+
+  quality String? // "Deep", "Restless", "Nap"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("health_records")
+  // 索引優化：查詢最近睡眠紀錄
+  @@index([babyId, startTime(sort: Desc)])
+  @@map("sleep_logs")
 }
+
+// 6. 飲食紀錄 (親餵/瓶餵/副食品)
+model FeedLog {
+  id     String @id @default(uuid())
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  type FeedType // BREAST, BOTTLE_FORMULA, BOTTLE_BREAST_MILK, SOLID
+
+  amount   Float? // ml (瓶餵/副食品用)
+  duration Int? // 秒數 (親餵用)
+  side     Side? // LEFT, RIGHT, BOTH (親餵用)
+
+  recordedAt DateTime @default(now())
+  note       String?
+
+  @@index([babyId, recordedAt(sort: Desc)])
+  @@map("feed_logs")
+}
+
+// 7. 尿布紀錄
+model DiaperLog {
+  id     String @id @default(uuid())
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  type    DiaperType // WET, DIRTY, MIXED, DRY
+  color   String? // 便便顏色
+  texture String? // 便便形狀/質地
+
+  recordedAt DateTime @default(now())
+  note       String?
+
+  @@index([babyId, recordedAt(sort: Desc)])
+  @@map("diaper_logs")
+}
+
+// Enums
 
 enum Gender {
   MALE
   FEMALE
+}
+
+enum HealthType {
+  TEMPERATURE
+  SYMPTOM
+  MEDICINE
+  VACCINE
+  OTHER
+}
+
+enum FeedType {
+  BREAST
+  BOTTLE_FORMULA
+  BOTTLE_BREAST_MILK
+  SOLID
+}
+
+enum Side {
+  LEFT
+  RIGHT
+  BOTH
+}
+
+enum DiaperType {
+  WET
+  DIRTY
+  MIXED
+  DRY
 }
