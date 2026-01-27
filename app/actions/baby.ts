@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { Gender } from "@/app/generated/prisma/client";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 export async function createBaby(data: {
   userId: string;
@@ -47,4 +48,42 @@ export async function getBaby(id: string) {
   return await prisma.baby.findUnique({
     where: { id },
   });
+}
+
+export async function switchBaby(babyId: string) {
+  (await cookies()).set("selectedBabyId", babyId);
+  revalidatePath("/");
+}
+
+export async function updateBaby(
+  babyId: string,
+  data: {
+    name?: string;
+    birthDate?: Date;
+    gender?: Gender;
+    photoUrl?: string;
+  },
+) {
+  const baby = await prisma.baby.update({
+    where: { id: babyId },
+    data,
+  });
+
+  revalidatePath("/");
+  return baby;
+}
+
+export async function deleteBaby(babyId: string) {
+  await prisma.baby.delete({
+    where: { id: babyId },
+  });
+
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get("selectedBabyId")?.value;
+
+  if (selectedId === babyId) {
+    cookieStore.delete("selectedBabyId");
+  }
+
+  revalidatePath("/");
 }

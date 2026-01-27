@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { Baby, FileText, Milk, Moon, Ruler, Thermometer } from "lucide-react";
-import { headers } from "next/headers";
-import { TimelineItem } from "./actions/timeline";
+import { cookies, headers } from "next/headers";
+import { getBabies } from "./actions/baby";
+import { getTimeline, TimelineItem } from "./actions/timeline";
 import { Header } from "./components/Header";
 import { QuickAction } from "./components/QuickAction";
 import { RecordList } from "./components/RecordList";
@@ -9,6 +10,7 @@ import { StatusCard } from "./components/StatusCard";
 
 export default async function Home() {
   let recentRecords: TimelineItem[] = [];
+  let currentBabyId: string | undefined;
 
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -24,13 +26,22 @@ export default async function Home() {
       },
     ];
   } else {
-    // recentRecords = await getTimeline();
+    const babies = await getBabies(session.user.id);
+    if (babies.length > 0) {
+      const cookieStore = await cookies();
+      const selectedId = cookieStore.get("selectedBabyId")?.value;
+      
+      // Use selected ID if it exists and belongs to the user, otherwise default to first baby
+      const targetBaby = babies.find(b => b.id === selectedId) || babies[0];
+      currentBabyId = targetBaby.id;
+      recentRecords = await getTimeline(targetBaby.id);
+    }
   }
 
   return (
     <main className="bg-background min-h-screen">
       <div className="mx-auto max-w-md space-y-8 px-4 py-2">
-        <Header userId={session?.user.id ?? ""} />
+        <Header userId={session?.user.id ?? ""} currentBabyId={currentBabyId} />
 
         {/* Status Section */}
         <section className="space-y-4">

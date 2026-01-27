@@ -12,27 +12,41 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import { use, useState } from "react";
+import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
+import { use, useState, useTransition } from "react";
+import { switchBaby } from "../actions/baby";
 import { Baby } from "../generated/prisma/client";
 import { AddBabyDialog } from "./AddBabyDialog";
+import { EditBabyDialog } from "./EditBabyDialog";
 
 export function BabySwitcher({
   babies,
   userId,
+  currentBabyId,
 }: {
   babies: Promise<Baby[]>;
   userId: string;
+  currentBabyId?: string;
 }) {
   const allBabies = use(babies);
   const [selectedBaby, setSelectedBaby] = useState(
-    allBabies[0] ?? {
-      id: "1",
-      name: "Taro Sato",
-      users: [],
-    },
+    allBabies.find((b) => b.id === currentBabyId) ??
+      allBabies[0] ?? {
+        id: "1",
+        name: "Taro Sato",
+        users: [],
+      },
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingBaby, setEditingBaby] = useState<Baby | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleBabySelect = (baby: Baby) => {
+    setSelectedBaby(baby);
+    startTransition(async () => {
+      await switchBaby(baby.id);
+    });
+  };
 
   return (
     <>
@@ -74,20 +88,38 @@ export function BabySwitcher({
           </DropdownMenuLabel>
           <DropdownMenuGroup>
             {allBabies.map((baby) => (
-              <DropdownMenuItem
+              <div
                 key={baby.id}
-                onSelect={() => setSelectedBaby(baby)}
-                className="focus:bg-secondary/30 flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2"
+                className="focus-within:bg-secondary/30 hover:bg-secondary/30 flex items-center gap-2 rounded-xl px-2 py-2 transition-colors"
               >
-                <Avatar className="h-8 w-8 border border-white">
-                  <AvatarImage src={baby.photoUrl ?? ""} alt={baby.name} />
-                  <AvatarFallback>{baby.name[0].toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="flex-1 font-medium">{baby.name}</span>
-                {selectedBaby.id === baby.id && (
-                  <Check className="text-primary h-4 w-4" />
-                )}
-              </DropdownMenuItem>
+                <div
+                  className="flex flex-1 cursor-pointer items-center gap-3"
+                  onClick={() => handleBabySelect(baby)}
+                >
+                  <Avatar className="h-8 w-8 border border-white">
+                    <AvatarImage src={baby.photoUrl ?? ""} alt={baby.name} />
+                    <AvatarFallback>
+                      {baby.name[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 font-medium">{baby.name}</span>
+                  {selectedBaby.id === baby.id && (
+                    <Check className="text-primary h-4 w-4" />
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-background h-6 w-6 rounded-full opacity-50 hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingBaby(baby);
+                  }}
+                >
+                  <Settings className="h-3 w-3" />
+                  <span className="sr-only">Settings</span>
+                </Button>
+              </div>
             ))}
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="bg-border/50 my-2" />
@@ -108,6 +140,14 @@ export function BabySwitcher({
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
       />
+
+      {editingBaby && (
+        <EditBabyDialog
+          baby={editingBaby}
+          open={!!editingBaby}
+          onOpenChange={(open) => !open && setEditingBaby(null)}
+        />
+      )}
     </>
   );
 }
