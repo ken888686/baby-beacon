@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Baby {
+  id        String   @id @default(uuid())
+  name      String
+  birthDate DateTime
+
+  gender  Gender
+  records HealthRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("babies")
+}
+
+model HealthRecord {
+  id String @id @default(uuid())
+
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id])
+
+  // 生長指標
+  height            Float? // 身高 (cm)
+  weight            Float? // 體重 (kg)
+  headCircumference Float? // 頭圍 (cm)
+
+  // 健康狀態
+  temperature Float? // 體溫 (°C)
+  symptoms    String[] // 症狀 (e.g., ["發燒", "咳嗽"])
+
+  note       String? // 備註
+  recordedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("health_records")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
