@@ -11,9 +11,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 import { LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function UserMenu() {
   const { data: session, isPending } = useSession();
+  const router = useRouter();
 
   if (isPending) {
     return <UserMenuLoader />;
@@ -59,7 +61,15 @@ export function UserMenu() {
         <div className="bg-border my-1 h-px" />
         <DropdownMenuItem
           className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600"
-          onClick={() => signOut()}
+          onClick={async () => {
+            await signOut({
+              fetchOptions: {
+                onSuccess: () => {
+                  router.refresh();
+                },
+              },
+            });
+          }}
         >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

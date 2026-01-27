@@ -1,27 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { Activity, Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
-import {
-  DiaperLog,
-  FeedLog,
-  GrowthRecord,
-  HealthLog,
-  SleepLog,
-} from "../generated/prisma/client";
-
-// 定義前端顯示用的通用紀錄型別
-// 這裡將 Prisma 的多個 Model 整合為一個 UI 介面
-export type TimelineRecord = {
-  id: string;
-  category: "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
-  title: string; // 主標題 (e.g. "Breast Feed", "Sleep")
-  details: string; // 詳細資訊 (e.g. "Left side, 15m", "36.6°C")
-  recordedAt: Date;
-  metadata?: SleepLog | FeedLog | DiaperLog | HealthLog | GrowthRecord; // 保留原始資料供進階顯示
-};
+import { TimelineItem } from "../actions/timeline";
 
 interface RecordListProps {
-  records: TimelineRecord[];
+  records: TimelineItem[];
 }
 
 export function RecordList({ records }: RecordListProps) {

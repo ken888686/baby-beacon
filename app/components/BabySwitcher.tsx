@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
 import { use, useState, useTransition } from "react";
 import { switchBaby } from "../actions/baby";
-import { Baby } from "../generated/prisma/client";
+import type { Baby, Gender } from "../generated/prisma/client";
 import { AddBabyDialog } from "./AddBabyDialog";
 import { EditBabyDialog } from "./EditBabyDialog";
 
@@ -29,12 +29,16 @@ export function BabySwitcher({
   currentBabyId?: string;
 }) {
   const allBabies = use(babies);
-  const [selectedBaby, setSelectedBaby] = useState(
+  const [selectedBaby, setSelectedBaby] = useState<Baby>(
     allBabies.find((b) => b.id === currentBabyId) ??
       allBabies[0] ?? {
-        id: "1",
-        name: "Taro Sato",
-        users: [],
+        id: "placeholder",
+        name: "Add a Baby",
+        birthDate: new Date(),
+        gender: "MALE" as Gender,
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

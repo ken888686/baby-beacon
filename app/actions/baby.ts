@@ -1,7 +1,7 @@
 "use server";
 
-import prisma from "@/lib/prisma";
 import { Gender } from "@/app/generated/prisma/client";
+import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -53,6 +53,21 @@ export async function getBaby(id: string) {
 export async function switchBaby(babyId: string) {
   (await cookies()).set("selectedBabyId", babyId);
   revalidatePath("/");
+}
+
+export async function getBabyStats(babyId: string) {
+  const [lastSleep, lastFeed] = await Promise.all([
+    prisma.sleepLog.findFirst({
+      where: { babyId },
+      orderBy: { startTime: "desc" },
+    }),
+    prisma.feedLog.findFirst({
+      where: { babyId },
+      orderBy: { recordedAt: "desc" },
+    }),
+  ]);
+
+  return { lastSleep, lastFeed };
 }
 
 export async function updateBaby(
