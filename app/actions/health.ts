@@ -1,7 +1,9 @@
 "use server";
 
+import { BabyRole, HealthType } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { HealthType } from "@/app/generated/prisma/client";
+import { logHealthSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 export async function logHealth(data: {
@@ -13,15 +15,18 @@ export async function logHealth(data: {
   note?: string;
   recordedAt?: Date;
 }) {
+  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const validated = logHealthSchema.parse(data);
+
   const log = await prisma.healthLog.create({
     data: {
-      babyId: data.babyId,
-      type: data.type,
-      value: data.value,
-      description: data.description,
-      symptoms: data.symptoms,
-      note: data.note,
-      recordedAt: data.recordedAt || new Date(),
+      babyId: validated.babyId,
+      type: validated.type as HealthType,
+      value: validated.value,
+      description: validated.description,
+      symptoms: validated.symptoms,
+      note: validated.note,
+      recordedAt: validated.recordedAt || new Date(),
     },
   });
 

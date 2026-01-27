@@ -23,7 +23,7 @@ export default async function Home() {
   });
 
   if (session) {
-    const babies = await getBabies(session.user.id);
+    const babies = await getBabies();
     if (babies.length > 0) {
       const cookieStore = await cookies();
       const selectedId = cookieStore.get("selectedBabyId")?.value;

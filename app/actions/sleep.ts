@@ -1,6 +1,9 @@
 "use server";
 
+import { BabyRole } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { logSleepSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 export async function logSleep(data: {
@@ -9,12 +12,15 @@ export async function logSleep(data: {
   endTime?: Date;
   quality?: string;
 }) {
+  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const validated = logSleepSchema.parse(data);
+
   const log = await prisma.sleepLog.create({
     data: {
-      babyId: data.babyId,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      quality: data.quality,
+      babyId: validated.babyId,
+      startTime: validated.startTime,
+      endTime: validated.endTime,
+      quality: validated.quality,
     },
   });
 
@@ -23,6 +29,8 @@ export async function logSleep(data: {
 }
 
 export async function startSleep(babyId: string) {
+  await verifyBabyAccess(babyId, BabyRole.ADMIN);
+  
   // Check if already sleeping
   const currentSleep = await prisma.sleepLog.findFirst({
     where: {
@@ -47,6 +55,8 @@ export async function startSleep(babyId: string) {
 }
 
 export async function stopSleep(babyId: string) {
+  await verifyBabyAccess(babyId, BabyRole.ADMIN);
+
   const currentSleep = await prisma.sleepLog.findFirst({
     where: {
       babyId,

@@ -1,7 +1,9 @@
 "use server";
 
+import { BabyRole, DiaperType } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { DiaperType } from "@/app/generated/prisma/client";
+import { logDiaperSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 export async function logDiaper(data: {
@@ -12,14 +14,17 @@ export async function logDiaper(data: {
   note?: string;
   recordedAt?: Date;
 }) {
+  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const validated = logDiaperSchema.parse(data);
+
   const log = await prisma.diaperLog.create({
     data: {
-      babyId: data.babyId,
-      type: data.type,
-      color: data.color,
-      texture: data.texture,
-      note: data.note,
-      recordedAt: data.recordedAt || new Date(),
+      babyId: validated.babyId,
+      type: validated.type as DiaperType,
+      color: validated.color,
+      texture: validated.texture,
+      note: validated.note,
+      recordedAt: validated.recordedAt || new Date(),
     },
   });
 

@@ -9,6 +9,7 @@ import {
   HealthType,
   SleepLog,
 } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 
 export type TimelineItem = {
@@ -24,6 +25,7 @@ export async function getTimeline(
   babyId: string,
   limit = 20,
 ): Promise<TimelineItem[]> {
+  await verifyBabyAccess(babyId);
   const [sleepLogs, feedLogs, diaperLogs, healthLogs, growthRecords] =
     await Promise.all([
       prisma.sleepLog.findMany({

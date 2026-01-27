@@ -1,27 +1,28 @@
 "use server";
 
-import { Gender } from "@/app/generated/prisma/client";
+import { BabyRole, Gender } from "@/app/generated/prisma/client";
+import { getSessionOrThrow, verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { createBabySchema, updateBabySchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 export async function createBaby(data: {
-  userId: string;
   name: string;
   birthDate: Date;
   gender: Gender;
   photoUrl?: string;
 }) {
+  const session = await getSessionOrThrow();
+  const validated = createBabySchema.parse(data);
+
   const baby = await prisma.baby.create({
     data: {
-      name: data.name,
-      birthDate: data.birthDate,
-      gender: data.gender,
-      photoUrl: data.photoUrl,
+      ...validated,
       users: {
         create: {
-          userId: data.userId,
-          role: "OWNER",
+          userId: session.user.id,
+          role: BabyRole.OWNER,
         },
       },
     },
@@ -31,12 +32,13 @@ export async function createBaby(data: {
   return baby;
 }
 
-export async function getBabies(userId: string) {
+export async function getBabies() {
+  const session = await getSessionOrThrow();
   return await prisma.baby.findMany({
     where: {
       users: {
         some: {
-          userId: userId,
+          userId: session.user.id,
         },
       },
     },
@@ -45,17 +47,20 @@ export async function getBabies(userId: string) {
 }
 
 export async function getBaby(id: string) {
+  await verifyBabyAccess(id);
   return await prisma.baby.findUnique({
     where: { id },
   });
 }
 
 export async function switchBaby(babyId: string) {
+  await verifyBabyAccess(babyId);
   (await cookies()).set("selectedBabyId", babyId);
   revalidatePath("/");
 }
 
 export async function getBabyStats(babyId: string) {
+  await verifyBabyAccess(babyId);
   const [lastSleep, lastFeed] = await Promise.all([
     prisma.sleepLog.findFirst({
       where: { babyId },
@@ -79,9 +84,12 @@ export async function updateBaby(
     photoUrl?: string;
   },
 ) {
+  await verifyBabyAccess(babyId, BabyRole.ADMIN);
+  const validated = updateBabySchema.parse(data);
+
   const baby = await prisma.baby.update({
     where: { id: babyId },
-    data,
+    data: validated,
   });
 
   revalidatePath("/");
@@ -89,6 +97,8 @@ export async function updateBaby(
 }
 
 export async function deleteBaby(babyId: string) {
+  await verifyBabyAccess(babyId, BabyRole.OWNER);
+  
   await prisma.baby.delete({
     where: { id: babyId },
   });

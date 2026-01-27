@@ -1,6 +1,9 @@
 "use server";
 
+import { BabyRole } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { logGrowthSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 export async function logGrowth(data: {
@@ -11,14 +14,17 @@ export async function logGrowth(data: {
   note?: string;
   recordedAt?: Date;
 }) {
+  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const validated = logGrowthSchema.parse(data);
+
   const log = await prisma.growthRecord.create({
     data: {
-      babyId: data.babyId,
-      height: data.height,
-      weight: data.weight,
-      headCircumference: data.headCircumference,
-      note: data.note,
-      recordedAt: data.recordedAt || new Date(),
+      babyId: validated.babyId,
+      height: validated.height,
+      weight: validated.weight,
+      headCircumference: validated.headCircumference,
+      note: validated.note,
+      recordedAt: validated.recordedAt || new Date(),
     },
   });
 

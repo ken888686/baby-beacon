@@ -1,7 +1,9 @@
 "use server";
 
+import { BabyRole, FeedType, Side } from "@/app/generated/prisma/client";
+import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { FeedType, Side } from "@/app/generated/prisma/client";
+import { logFeedSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 
 export async function logFeed(data: {
@@ -13,15 +15,18 @@ export async function logFeed(data: {
   note?: string;
   recordedAt?: Date;
 }) {
+  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const validated = logFeedSchema.parse(data);
+
   const log = await prisma.feedLog.create({
     data: {
-      babyId: data.babyId,
-      type: data.type,
-      amount: data.amount,
-      duration: data.duration,
-      side: data.side,
-      note: data.note,
-      recordedAt: data.recordedAt || new Date(),
+      babyId: validated.babyId,
+      type: validated.type as FeedType,
+      amount: validated.amount,
+      duration: validated.duration,
+      side: validated.side as Side,
+      note: validated.note,
+      recordedAt: validated.recordedAt || new Date(),
     },
   });
 

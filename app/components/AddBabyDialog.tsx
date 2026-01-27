@@ -51,7 +51,6 @@ export function AddBabyDialog({
 
     startTransition(async () => {
       await createBaby({
-        userId,
         name,
         birthDate: new Date(birthDate),
         gender,

@@ -10,7 +10,7 @@ export function Header({
   userId: string;
   currentBabyId?: string;
 }) {
-  const allBabies = getBabies(userId);
+  const allBabies = getBabies();
 
   return (
     <header className="flex items-center justify-between py-6">
