@@ -57,14 +57,14 @@ export default function Home() {
               value="1h 30m"
               subValue="Woke up 2h ago"
               icon={Moon}
-              className="border-indigo-100 bg-indigo-50/50 text-indigo-900"
+              className="border-slate-200 bg-slate-50/50 text-slate-700"
             />
             <StatusCard
               title="Last Feed"
               value="140ml"
               subValue="45m ago"
               icon={Milk}
-              className="border-orange-100 bg-orange-50/50 text-orange-900"
+              className="border-amber-200 bg-amber-50/50 text-amber-800"
             />
           </div>
         </section>

@@ -4,34 +4,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Baby Beacon Design System Colors - Mapped to Shadcn variables */
-  --background: #fdf2f8;
-  --foreground: #9d174d;
+  /* Baby Beacon Design System Colors - Neutral Soft Sage Theme */
+  --background: #fbfbf6; /* Soft warm white */
+  --foreground: #4b5563; /* Warm dark gray */
 
   --card: #ffffff;
-  --card-foreground: #9d174d;
+  --card-foreground: #4b5563;
 
   --popover: #ffffff;
-  --popover-foreground: #9d174d;
+  --popover-foreground: #4b5563;
 
-  --primary: #f472b6;
+  --primary: #99b8a8; /* Soft Sage Green */
   --primary-foreground: #ffffff;
 
-  --secondary: #fbcfe8;
-  --secondary-foreground: #9d174d;
+  --secondary: #e8efe9; /* Very light green mist */
+  --secondary-foreground: #374151;
 
-  --muted: #fff0f5;
-  --muted-foreground: #9d174d; /* Opacity handled by utils if needed, or stick to solid */
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
 
-  --accent: #fbcfe8;
-  --accent-foreground: #9d174d;
+  --accent: #e8efe9;
+  --accent-foreground: #374151;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #fbcfe8;
-  --input: #fbcfe8;
-  --ring: #f472b6;
+  --border: #dce5df;
+  --input: #dce5df;
+  --ring: #99b8a8;
 
   --radius: 0.75rem; /* Rounded corners for soft UI */
 
@@ -42,14 +42,14 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  --sidebar: #fdf2f8;
-  --sidebar-foreground: #9d174d;
-  --sidebar-primary: #f472b6;
+  --sidebar: #fbfbf6;
+  --sidebar-foreground: #4b5563;
+  --sidebar-primary: #99b8a8;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #fbcfe8;
-  --sidebar-accent-foreground: #9d174d;
-  --sidebar-border: #fbcfe8;
-  --sidebar-ring: #f472b6;
+  --sidebar-accent: #e8efe9;
+  --sidebar-accent-foreground: #374151;
+  --sidebar-border: #dce5df;
+  --sidebar-ring: #99b8a8;
 
   /* Custom Font Variables */
   --font-display: var(--font-varela);

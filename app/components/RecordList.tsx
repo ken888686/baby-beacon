@@ -53,15 +53,15 @@ export function RecordList({ records }: RecordListProps) {
   const getIconColor = (category: string) => {
     switch (category) {
       case "SLEEP":
-        return "bg-indigo-100 text-indigo-600";
+        return "bg-slate-100 text-slate-600";
       case "FEED":
-        return "bg-orange-100 text-orange-600";
+        return "bg-amber-100 text-amber-700";
       case "DIAPER":
-        return "bg-teal-100 text-teal-600";
+        return "bg-emerald-100 text-emerald-600";
       case "HEALTH":
-        return "bg-red-100 text-red-600";
+        return "bg-rose-100 text-rose-600";
       case "GROWTH":
-        return "bg-blue-100 text-blue-600";
+        return "bg-sky-100 text-sky-600";
       default:
         return "bg-gray-100 text-gray-600";
     }

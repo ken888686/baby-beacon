@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { Suspense } from "react";
 import { BabySwitcher, BabySwitcherLoader } from "./BabySwitcher";
+import { UserMenu } from "./UserMenu";
 
 export function Header() {
   const allBabies = prisma.baby.findMany({
@@ -10,10 +11,11 @@ export function Header() {
   });
 
   return (
-    <header className="flex items-center justify-center py-6">
+    <header className="flex items-center justify-between py-6">
       <Suspense fallback={<BabySwitcherLoader />}>
         <BabySwitcher babies={allBabies} />
       </Suspense>
+      <UserMenu />
     </header>
   );
 }
