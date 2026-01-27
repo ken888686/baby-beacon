@@ -9,7 +9,7 @@ export function Header({ userId }: { userId: string }) {
   return (
     <header className="flex items-center justify-between py-6">
       <Suspense fallback={<BabySwitcherLoader />}>
-        <BabySwitcher babies={allBabies} />
+        <BabySwitcher babies={allBabies} userId={userId} />
       </Suspense>
       <Suspense fallback={<UserMenuLoader />}>
         <UserMenu />

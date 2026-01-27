@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Nunito_Sans, Varela_Round } from "next/font/google";
+import { Nunito, Varela_Round } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
-const varelaRound = Varela_Round({
+const varela = Varela_Round({
   weight: "400",
-  variable: "--font-varela",
   subsets: ["latin"],
+  variable: "--font-varela",
 });
 
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito",
+const nunito = Nunito({
   subsets: ["latin"],
+  variable: "--font-nunito",
 });
 
 export const metadata: Metadata = {
-  title: "Baby Beacon",
-  description: "Smart baby monitoring assistant",
+  title: "Baby Beacon | Smart Baby Tracker",
+  description: "Smart monitoring and health tracking for your little ones.",
 };
 
 export default function RootLayout({
@@ -26,9 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${varelaRound.variable} ${nunitoSans.variable} bg-background text-text-main antialiased`}
+        className={`${varela.variable} ${nunito.variable} antialiased`}
       >
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
