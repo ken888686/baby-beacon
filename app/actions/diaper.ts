@@ -14,7 +14,7 @@ export async function logDiaper(data: {
   note?: string;
   recordedAt?: Date;
 }) {
-  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
   const validated = logDiaperSchema.parse(data);
 
   const log = await prisma.diaperLog.create({
@@ -25,6 +25,7 @@ export async function logDiaper(data: {
       texture: validated.texture,
       note: validated.note,
       recordedAt: validated.recordedAt || new Date(),
+      recordedBy: session.user.id,
     },
   });
 

@@ -35,7 +35,7 @@ export const updateBabySchema = z.object({
 
 // Sleep Schemas
 export const logSleepSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.uuid(),
   startTime: z.date(),
   endTime: z.date().optional(),
   quality: z.string().optional(),
@@ -43,7 +43,7 @@ export const logSleepSchema = z.object({
 
 // Feed Schemas
 export const logFeedSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.uuid(),
   type: FeedTypeEnum,
   amount: z.number().positive().optional(),
   duration: z.number().positive().optional(),
@@ -54,7 +54,7 @@ export const logFeedSchema = z.object({
 
 // Diaper Schemas
 export const logDiaperSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.uuid(),
   type: DiaperTypeEnum,
   color: z.string().optional(),
   texture: z.string().optional(),
@@ -64,7 +64,7 @@ export const logDiaperSchema = z.object({
 
 // Health Schemas
 export const logHealthSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.uuid(),
   type: HealthTypeEnum,
   value: z.number().optional(),
   description: z.string().optional(),
@@ -75,7 +75,7 @@ export const logHealthSchema = z.object({
 
 // Growth Schemas
 export const logGrowthSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.uuid(),
   height: z.number().positive().optional(),
   weight: z.number().positive().optional(),
   headCircumference: z.number().positive().optional(),

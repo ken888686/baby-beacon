@@ -134,6 +134,7 @@ model GrowthRecord {
   headCircumference Float? // cm
 
   recordedAt DateTime @default(now())
+  recordedBy String
   note       String?
 
   // 索引優化：快速查詢特定寶寶的生長歷史
@@ -153,6 +154,7 @@ model HealthLog {
   symptoms    String[] // 症狀標籤陣列
 
   recordedAt DateTime @default(now())
+  recordedBy String
   note       String?
 
   @@index([babyId, recordedAt(sort: Desc)])
@@ -170,8 +172,9 @@ model SleepLog {
 
   quality String? // "Deep", "Restless", "Nap"
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  recordedBy String? // User ID
+  updatedAt  DateTime @updatedAt
 
   // 索引優化：查詢最近睡眠紀錄
   @@index([babyId, startTime(sort: Desc)])
@@ -191,6 +194,7 @@ model FeedLog {
   side     Side? // LEFT, RIGHT, BOTH (親餵用)
 
   recordedAt DateTime @default(now())
+  recordedBy String
   note       String?
 
   @@index([babyId, recordedAt(sort: Desc)])
@@ -208,6 +212,7 @@ model DiaperLog {
   texture String? // 便便形狀/質地
 
   recordedAt DateTime @default(now())
+  recordedBy String
   note       String?
 
   @@index([babyId, recordedAt(sort: Desc)])
