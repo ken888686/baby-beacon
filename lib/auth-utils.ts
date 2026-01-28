@@ -1,6 +1,6 @@
+import { BabyRole } from "@/app/generated/prisma/client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { BabyRole } from "@/app/generated/prisma/client";
 import { headers } from "next/headers";
 
 export async function getSessionOrThrow() {
@@ -43,14 +43,34 @@ export async function checkBabyPermission(
   const requiredLevel = ROLE_LEVELS[requiredRole];
 
   if (userLevel < requiredLevel) {
-    throw new Error(`Forbidden: Insufficient permissions. Required: ${requiredRole}`);
+    throw new Error(
+      `Forbidden: Insufficient permissions. Required: ${requiredRole}`,
+    );
   }
 
   return userBaby;
 }
 
-export async function verifyBabyAccess(babyId: string, requiredRole: BabyRole = BabyRole.VIEWER) {
+export async function verifyBabyAccess(
+  babyId: string,
+  requiredRole: BabyRole = BabyRole.VIEWER,
+) {
   const session = await getSessionOrThrow();
   await checkBabyPermission(babyId, session.user.id, requiredRole);
   return session;
+}
+
+/**
+ * HOF to wrap a server action with baby access verification.
+ * Assumes the first argument of the action is always `babyId`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withBabyAccess<TArgs extends any[], TResult>(
+  action: (babyId: string, ...args: TArgs) => Promise<TResult>,
+  requiredRole: BabyRole = BabyRole.VIEWER,
+) {
+  return async (babyId: string, ...args: TArgs): Promise<TResult> => {
+    await verifyBabyAccess(babyId, requiredRole);
+    return action(babyId, ...args);
+  };
 }

@@ -17,6 +17,14 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: "Baby Beacon | Smart Baby Tracker",
   description: "Smart monitoring and health tracking for your little ones.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Baby Beacon",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -26,9 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${varela.variable} ${nunito.variable} antialiased`}
-      >
+      <body className={`${varela.variable} ${nunito.variable} antialiased`}>
         {children}
         <Toaster position="top-center" richColors />
       </body>

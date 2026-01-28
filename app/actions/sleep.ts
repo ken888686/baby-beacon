@@ -30,7 +30,7 @@ export async function logSleep(data: {
 
 export async function startSleep(babyId: string) {
   await verifyBabyAccess(babyId, BabyRole.ADMIN);
-  
+
   // Check if already sleeping
   const currentSleep = await prisma.sleepLog.findFirst({
     where: {
