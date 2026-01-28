@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LucideIcon, Plus } from "lucide-react";
 
 interface QuickActionProps {
@@ -12,7 +13,7 @@ export function QuickAction({ label, icon: Icon, onClick }: QuickActionProps) {
     <Button
       variant="outline"
       onClick={onClick}
-      className="group border-secondary/50 hover:border-primary/50 hover:bg-secondary/20 flex h-auto flex-col items-center justify-center rounded-2xl p-4 shadow-sm transition-all duration-200"
+      className="group border-secondary/50 hover:border-primary/50 hover:bg-secondary/20 flex h-28 flex-col items-center justify-center rounded-2xl p-4 shadow-sm transition-all duration-200"
     >
       <div className="relative mb-2">
         <div className="bg-secondary/30 group-hover:bg-secondary/50 text-foreground rounded-2xl p-3 transition-colors">
@@ -25,4 +26,8 @@ export function QuickAction({ label, icon: Icon, onClick }: QuickActionProps) {
       <span className="text-xs font-semibold">{label}</span>
     </Button>
   );
+}
+
+export function QuickActionLoader() {
+  return <Skeleton className="h-28 rounded-2xl p-4" />;
 }

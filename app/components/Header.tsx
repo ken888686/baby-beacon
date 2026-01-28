@@ -17,3 +17,12 @@ export function Header({ currentBabyId }: { currentBabyId?: string }) {
     </header>
   );
 }
+
+export function HeaderLoader() {
+  return (
+    <header className="flex items-center justify-between py-6">
+      <BabySwitcherLoader />
+      <UserMenuLoader />
+    </header>
+  );
+}

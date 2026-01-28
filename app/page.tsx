@@ -28,7 +28,6 @@ export default async function Home() {
       const cookieStore = await cookies();
       const selectedId = cookieStore.get("selectedBabyId")?.value;
 
-      // Use selected ID if it exists and belongs to the user, otherwise default to first baby
       const targetBaby = babies.find((b) => b.id === selectedId) || babies[0];
       currentBabyId = targetBaby.id;
 
@@ -78,6 +77,7 @@ export default async function Home() {
   return (
     <main className="bg-background min-h-screen">
       <div className="mx-auto max-w-md space-y-8 px-4 py-2">
+        {/* Header */}
         <Header currentBabyId={currentBabyId} />
 
         {/* Status Section */}

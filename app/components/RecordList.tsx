@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { Activity, Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
 import { TimelineItem } from "../actions/timeline";
@@ -8,14 +9,6 @@ interface RecordListProps {
 }
 
 export function RecordList({ records }: RecordListProps) {
-  if (records.length === 0) {
-    return (
-      <div className="py-10 text-center opacity-60">
-        <p>No recent records</p>
-      </div>
-    );
-  }
-
   const getIcon = (category: string) => {
     switch (category) {
       case "SLEEP":
@@ -53,33 +46,52 @@ export function RecordList({ records }: RecordListProps) {
   return (
     <div className="space-y-3">
       <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
-      <div className="space-y-3">
-        {records.map((record) => {
-          const Icon = getIcon(record.category);
-          const colorClass = getIconColor(record.category);
+      {records.length === 0 ? (
+        <div className="py-10 text-center opacity-60">
+          <p>No recent records</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {records.map((record) => {
+            const Icon = getIcon(record.category);
+            const colorClass = getIconColor(record.category);
 
-          return (
-            <Card
-              key={record.id}
-              className="border-secondary/30 hover:bg-secondary/5 shadow-sm transition-colors"
-            >
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className={`rounded-full p-2.5 ${colorClass}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-foreground font-semibold">
-                    {record.title}
-                  </p>
-                  <p className="text-sm opacity-70">{record.details}</p>
-                </div>
-                <span className="text-xs font-medium whitespace-nowrap opacity-50">
-                  {formatDistanceToNow(record.recordedAt, { addSuffix: true })}
-                </span>
-              </CardContent>
-            </Card>
-          );
-        })}
+            return (
+              <Card
+                key={record.id}
+                className="border-secondary/30 hover:bg-secondary/5 animate-fade-in shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className={`rounded-full p-2.5 ${colorClass}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-foreground font-semibold">
+                      {record.title}
+                    </p>
+                    <p className="text-sm opacity-70">{record.details}</p>
+                  </div>
+                  <span className="text-xs font-medium whitespace-nowrap opacity-50">
+                    {formatDistanceToNow(record.recordedAt, {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function RecordListLoader() {
+  return (
+    <div className="space-y-3">
+      <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
+      <div className="space-y-4">
+        <Skeleton className="h-[200px] w-full rounded-2xl" />
       </div>
     </div>
   );

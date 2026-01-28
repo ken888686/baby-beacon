@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -41,5 +42,17 @@ export function StatusCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export function StatusCardLoader() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        {[...Array(2)].map((_, i) => (
+          <Skeleton key={i} className="h-48 rounded-2xl" />
+        ))}
+      </div>
+    </div>
   );
 }
