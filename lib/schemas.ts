@@ -47,7 +47,7 @@ export const logFeedSchema = z.object({
   type: FeedTypeEnum,
   amount: z.number().positive().optional(),
   duration: z.number().positive().optional(),
-  side: SideEnum.optional(),
+  side: SideEnum.nullable().optional(),
   note: z.string().optional(),
   recordedAt: z.date().optional(),
 });

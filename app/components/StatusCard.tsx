@@ -21,7 +21,7 @@ export function StatusCard({
   return (
     <Card
       className={cn(
-        "border shadow-sm transition-all active:scale-[0.98]",
+        "h-56 border shadow-sm transition-all active:scale-[0.98]",
         className,
       )}
     >
@@ -50,7 +50,7 @@ export function StatusCardLoader() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         {[...Array(2)].map((_, i) => (
-          <Skeleton key={i} className="h-48 rounded-2xl" />
+          <Skeleton key={i} className="h-56 rounded-2xl" />
         ))}
       </div>
     </div>

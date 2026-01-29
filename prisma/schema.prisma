@@ -233,18 +233,18 @@ enum Gender {
 }
 
 enum HealthType {
-  TEMPERATURE
-  SYMPTOM
-  MEDICINE
-  VACCINE
-  OTHER
+  TEMPERATURE // 體溫
+  SYMPTOM // 症狀
+  MEDICINE // 用藥
+  VACCINE // 疫苗
+  OTHER // 其他
 }
 
 enum FeedType {
-  BREAST
-  BOTTLE_FORMULA
-  BOTTLE_BREAST_MILK
-  SOLID
+  BREAST // 親餵
+  BOTTLE_FORMULA // 瓶餵(奶粉)
+  BOTTLE_BREAST_MILK // 瓶餵(母乳)
+  SOLID // 副食品
 }
 
 enum Side {

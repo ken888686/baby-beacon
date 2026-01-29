@@ -4,6 +4,7 @@ import { Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
 import { cookies, headers } from "next/headers";
 import { getBabies, getBabyStats } from "./actions/baby";
 import { getTimeline, TimelineItem } from "./actions/timeline";
+import { FeedDialog } from "./components/actions/FeedDialog";
 import { SleepDialog } from "./components/actions/SleepDialog";
 import { Header } from "./components/Header";
 import { QuickAction } from "./components/QuickAction";
@@ -112,7 +113,11 @@ export default async function Home() {
             ) : (
               <QuickAction label="Sleep" icon={Moon} />
             )}
-            <QuickAction label="Feed" icon={Milk} />
+            {currentBabyId ? (
+              <FeedDialog babyId={currentBabyId} />
+            ) : (
+              <QuickAction label="Feed" icon={Milk} />
+            )}
             <QuickAction label="Diaper" icon={Baby} />
             <QuickAction label="Health" icon={Thermometer} />
             <QuickAction label="Growth" icon={Ruler} />

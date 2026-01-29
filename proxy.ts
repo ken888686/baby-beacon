@@ -6,14 +6,16 @@ import { auth } from "./lib/auth";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ["/login"];
-  if (publicPaths.includes(pathname)) {
-    return NextResponse.next();
-  }
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+
+  if (pathname === "/login") {
+    if (session) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
 
   if (!session) {
     const loginUrl = new URL("/login", request.url);
@@ -35,5 +37,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/", "/login"],
 };
