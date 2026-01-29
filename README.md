@@ -6,6 +6,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 ## ✨ Features
 
 - **Soft UI Design**: A gentle, pastel-colored interface optimized for night-time use and sleep-deprived eyes.
+- **Secure Authentication**: Built-in Google social login powered by Better Auth.
 - **Multi-Baby Management**: Easily switch between different babies using the built-in Baby Switcher.
 - **Unified Activity Timeline**: A consolidated view of all baby activities, sorted by time with intuitive category icons.
 - **Activity Tracking**:
@@ -19,6 +20,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Authentication**: [Better Auth](https://better-auth.com/)
 - **Database**: [Prisma](https://www.prisma.io/) with PostgreSQL (Custom client output)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
@@ -52,6 +54,10 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/baby-beacon"
+   GOOGLE_CLIENT_ID="your-google-client-id"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
+   BETTER_AUTH_SECRET="your-auth-secret"
+   BETTER_AUTH_URL="http://localhost:3000"
    ```
 
 4. **Initialize Database & Seed Data:**
