@@ -14,7 +14,7 @@ export async function logGrowth(data: {
   note?: string;
   recordedAt?: Date;
 }) {
-  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
   const validated = logGrowthSchema.parse(data);
 
   const log = await prisma.growthRecord.create({
@@ -25,6 +25,7 @@ export async function logGrowth(data: {
       headCircumference: validated.headCircumference,
       note: validated.note,
       recordedAt: validated.recordedAt || new Date(),
+      recordedBy: session.user.id,
     },
   });
 

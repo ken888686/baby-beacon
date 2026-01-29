@@ -78,11 +78,11 @@ export const getTimeline = withBabyAccess(
       switch (log.type) {
         case FeedType.BREAST:
           title = "Breast Feed";
-          details = `${log.side} side, ${log.duration ? Math.round(log.duration / 60) + "m" : ""}`;
+          details = `${log.side} side, ${log.duration}m`;
           break;
         case FeedType.BOTTLE_FORMULA:
           title = "Bottle (Formula)";
-          details = `${log.amount}ml`;
+          details = `${log.amount}ml, ${log.note || ""}`;
           break;
         case FeedType.BOTTLE_BREAST_MILK:
           title = "Bottle (Breast Milk)";

@@ -15,7 +15,7 @@ export async function logFeed(data: {
   note?: string;
   recordedAt?: Date;
 }) {
-  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
   const validated = logFeedSchema.parse(data);
 
   const log = await prisma.feedLog.create({
@@ -27,6 +27,7 @@ export async function logFeed(data: {
       side: validated.side as Side,
       note: validated.note,
       recordedAt: validated.recordedAt || new Date(),
+      recordedBy: session.user.id,
     },
   });
 

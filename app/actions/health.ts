@@ -15,7 +15,7 @@ export async function logHealth(data: {
   note?: string;
   recordedAt?: Date;
 }) {
-  await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
+  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
   const validated = logHealthSchema.parse(data);
 
   const log = await prisma.healthLog.create({
@@ -27,6 +27,7 @@ export async function logHealth(data: {
       symptoms: validated.symptoms,
       note: validated.note,
       recordedAt: validated.recordedAt || new Date(),
+      recordedBy: session.user.id,
     },
   });
 

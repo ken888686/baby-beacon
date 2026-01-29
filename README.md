@@ -1,6 +1,7 @@
 # 👶 Baby Beacon
 
-**Baby Beacon** is a smart baby monitoring and health tracking assistant designed for tired parents. It provides a soft, intuitive interface to track daily activities, growth metrics, and health records for multiple babies.
+**Baby Beacon** is a smart baby monitoring and health tracking assistant designed for tired parents. It
+provides a soft, intuitive interface to track daily activities, growth metrics, and health records for multiple babies.
 
 ## ✨ Features
 
@@ -62,6 +63,7 @@
    ```
 
 5. **Run the Development Server:**
+
    ```bash
    bun dev
    ```
@@ -74,7 +76,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
   - `components/`: Business logic components (BabySwitcher, RecordList, etc.)
   - `generated/`: Custom Prisma Client output location.
 - `components/ui/`: Reusable shadcn/ui components.
-- `prisma/`: 
+- `prisma/`:
   - `schema.prisma`: Multi-model schema for baby tracking.
   - `seed.ts`: Mock data for development.
 - `lib/`: Prisma client instance and utility functions.

@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { formatDistanceToNow } from "date-fns";
-import { Baby, FileText, Milk, Moon, Ruler, Thermometer } from "lucide-react";
+import { Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
 import { cookies, headers } from "next/headers";
 import { getBabies, getBabyStats } from "./actions/baby";
 import { getTimeline, TimelineItem } from "./actions/timeline";
+import { FeedDialog } from "./components/actions/FeedDialog";
+import { SleepDialog } from "./components/actions/SleepDialog";
 import { Header } from "./components/Header";
 import { QuickAction } from "./components/QuickAction";
 import { RecordList } from "./components/RecordList";
@@ -106,12 +108,19 @@ export default async function Home() {
             Quick Actions
           </h2>
           <div className="grid grid-cols-3 gap-3">
-            <QuickAction label="Sleep" icon={Moon} />
-            <QuickAction label="Feed" icon={Milk} />
+            {currentBabyId ? (
+              <SleepDialog babyId={currentBabyId} lastSleep={stats.lastSleep} />
+            ) : (
+              <QuickAction label="Sleep" icon={Moon} />
+            )}
+            {currentBabyId ? (
+              <FeedDialog babyId={currentBabyId} />
+            ) : (
+              <QuickAction label="Feed" icon={Milk} />
+            )}
             <QuickAction label="Diaper" icon={Baby} />
             <QuickAction label="Health" icon={Thermometer} />
             <QuickAction label="Growth" icon={Ruler} />
-            <QuickAction label="Note" icon={FileText} />
           </div>
         </section>
 
