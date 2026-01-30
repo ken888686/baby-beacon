@@ -3,6 +3,7 @@
 import {
   BabyRole,
   DiaperLog,
+  DiaperType,
   FeedLog,
   FeedType,
   GrowthRecord,
@@ -112,9 +113,16 @@ export const getTimeline = withBabyAccess(
 
     // Transform Diaper Logs
     diaperLogs.forEach((log) => {
-      let details = log.type as string;
-      if (log.color || log.texture) {
-        details += ` (${[log.color, log.texture].filter(Boolean).join(", ")})`;
+      let details = "";
+      switch (log.type) {
+        case DiaperType.WET:
+        case DiaperType.DRY:
+          details = log.note || "";
+          break;
+        case DiaperType.DIRTY:
+        case DiaperType.MIXED:
+          details = `${log.color}, ${log.texture}, ${log.note || ""}`;
+          break;
       }
 
       timeline.push({

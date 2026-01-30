@@ -56,8 +56,8 @@ export const logFeedSchema = z.object({
 export const logDiaperSchema = z.object({
   babyId: z.uuid(),
   type: DiaperTypeEnum,
-  color: z.string().optional(),
-  texture: z.string().optional(),
+  color: z.string().nullable().optional(),
+  texture: z.string().nullable().optional(),
   note: z.string().optional(),
   recordedAt: z.date().optional(),
 });

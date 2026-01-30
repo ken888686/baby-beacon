@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteTimelineRecord } from "@/app/actions/timeline";
-import { FeedLog, SleepLog } from "@/app/generated/prisma/client";
+import { DiaperLog, FeedLog, SleepLog } from "@/app/generated/prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +41,7 @@ import {
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { TimelineItem } from "../actions/timeline";
+import { DiaperForm } from "./actions/DiaperDialog";
 import { FeedForm } from "./actions/FeedDialog";
 import { SleepForm } from "./actions/SleepDialog";
 
@@ -145,9 +146,7 @@ export function RecordList({ records }: RecordListProps) {
                         <MoreVertical className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setEditingRecord(record)}
-                        >
+                        <DropdownMenuItem onClick={() => setEditingRecord(record)}>
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
@@ -195,8 +194,15 @@ export function RecordList({ records }: RecordListProps) {
                 onSuccess={() => setEditingRecord(null)}
               />
             )}
+            {editingRecord?.category === "DIAPER" && (
+              <DiaperForm
+                babyId={(editingRecord.metadata as DiaperLog).babyId}
+                initialData={editingRecord.metadata as DiaperLog}
+                onSuccess={() => setEditingRecord(null)}
+              />
+            )}
             {editingRecord &&
-              !["FEED", "SLEEP"].includes(editingRecord.category) && (
+              !["FEED", "SLEEP", "DIAPER"].includes(editingRecord.category) && (
                 <p className="py-4 text-center text-sm opacity-60">
                   Editing for {editingRecord.category} is not implemented yet.
                 </p>
