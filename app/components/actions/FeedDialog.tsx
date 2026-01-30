@@ -1,7 +1,8 @@
 "use client";
 
-import { logFeed } from "@/app/actions/feed";
+import { logFeed, updateFeed } from "@/app/actions/feed";
 import { QuickAction } from "@/app/components/QuickAction";
+import { FeedLog } from "@/app/generated/prisma/client";
 import { FeedType, Side } from "@/app/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,6 +34,7 @@ interface FeedFormProps {
   babyId: string;
   defaultType?: FeedType;
   onSuccess?: () => void;
+  initialData?: FeedLog;
 }
 
 export function FeedDialog({ babyId }: FeedDialogProps) {
@@ -78,12 +80,19 @@ export function FeedDialog({ babyId }: FeedDialogProps) {
   );
 }
 
-export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+export function FeedForm({
+  babyId,
+  defaultType,
+  onSuccess,
+  initialData,
+}: FeedFormProps) {
+  const [date, setDate] = useState<Date | undefined>(
+    initialData ? new Date(initialData.recordedAt) : new Date(),
+  );
   const [dateOpen, setDateOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [type, setType] = useState<FeedType>(
-    defaultType || FeedType.BOTTLE_FORMULA,
+    initialData?.type || defaultType || FeedType.BOTTLE_FORMULA,
   );
 
   async function handleLogFeed(formData: FormData) {
@@ -110,19 +119,31 @@ export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
 
     startTransition(async () => {
       try {
-        await logFeed({
-          babyId,
-          type: selectedType,
-          amount,
-          duration,
-          side,
-          note,
-          recordedAt: dateTime,
-        });
-        toast.success("Feed logged successfully");
+        if (initialData) {
+          await updateFeed(initialData.id, {
+            type: selectedType,
+            amount,
+            duration,
+            side,
+            note,
+            recordedAt: dateTime,
+          });
+          toast.success("Feed updated successfully");
+        } else {
+          await logFeed({
+            babyId,
+            type: selectedType,
+            amount,
+            duration,
+            side,
+            note,
+            recordedAt: dateTime,
+          });
+          toast.success("Feed logged successfully");
+        }
         onSuccess?.();
       } catch (error) {
-        toast.error("Failed to log feed: " + error);
+        toast.error("Failed to save feed: " + error);
       }
     });
   }
@@ -188,7 +209,10 @@ export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
               type="time"
               name="time"
               step="1"
-              defaultValue={format(new Date(), "HH:mm:ss")}
+              defaultValue={format(
+                initialData ? new Date(initialData.recordedAt) : new Date(),
+                "HH:mm:ss",
+              )}
             />
           </Field>
         </div>
@@ -205,6 +229,7 @@ export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
             name="amount"
             placeholder={type === FeedType.SOLID ? "100" : "150"}
             step="0.5"
+            defaultValue={initialData?.amount || ""}
           />
         </Field>
       )}
@@ -214,7 +239,7 @@ export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
         <>
           <Field>
             <FieldLabel>Side</FieldLabel>
-            <Select name="side" defaultValue={Side.BOTH}>
+            <Select name="side" defaultValue={initialData?.side || Side.BOTH}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -227,18 +252,31 @@ export function FeedForm({ babyId, defaultType, onSuccess }: FeedFormProps) {
           </Field>
           <Field>
             <FieldLabel>Duration (minutes)</FieldLabel>
-            <Input type="number" name="duration" placeholder="15" />
+            <Input
+              type="number"
+              name="duration"
+              placeholder="15"
+              defaultValue={initialData?.duration || ""}
+            />
           </Field>
         </>
       )}
 
       <Field>
         <FieldLabel>Note</FieldLabel>
-        <Input name="note" placeholder="Optional notes" />
+        <Input
+          name="note"
+          placeholder="Optional notes"
+          defaultValue={initialData?.note || ""}
+        />
       </Field>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : "Save Record"}
+        {isPending
+          ? "Saving..."
+          : initialData
+            ? "Update Record"
+            : "Save Record"}
       </Button>
     </form>
   );

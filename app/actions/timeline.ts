@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  BabyRole,
   DiaperLog,
   FeedLog,
   FeedType,
@@ -9,8 +10,13 @@ import {
   HealthType,
   SleepLog,
 } from "@/app/generated/prisma/client";
-import { withBabyAccess } from "@/lib/auth-utils";
+import {
+  getSessionOrThrow,
+  verifyBabyAccess,
+  withBabyAccess,
+} from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export type TimelineItem = {
   id: string;
@@ -180,3 +186,64 @@ export const getTimeline = withBabyAccess(
       .slice(0, limit);
   },
 );
+
+export async function deleteTimelineRecord(
+  id: string,
+  category: "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH",
+) {
+  await getSessionOrThrow();
+
+  let babyId: string | undefined;
+
+  // 1. Find the record first to get babyId
+  switch (category) {
+    case "SLEEP":
+      const sleep = await prisma.sleepLog.findUnique({ where: { id } });
+      babyId = sleep?.babyId;
+      break;
+    case "FEED":
+      const feed = await prisma.feedLog.findUnique({ where: { id } });
+      babyId = feed?.babyId;
+      break;
+    case "DIAPER":
+      const diaper = await prisma.diaperLog.findUnique({ where: { id } });
+      babyId = diaper?.babyId;
+      break;
+    case "HEALTH":
+      const health = await prisma.healthLog.findUnique({ where: { id } });
+      babyId = health?.babyId;
+      break;
+    case "GROWTH":
+      const growth = await prisma.growthRecord.findUnique({ where: { id } });
+      babyId = growth?.babyId;
+      break;
+  }
+
+  if (!babyId) {
+    throw new Error("Record not found");
+  }
+
+  // 2. Verify access BEFORE deleting
+  await verifyBabyAccess(babyId, BabyRole.ADMIN);
+
+  // 3. Delete the record
+  switch (category) {
+    case "SLEEP":
+      await prisma.sleepLog.delete({ where: { id } });
+      break;
+    case "FEED":
+      await prisma.feedLog.delete({ where: { id } });
+      break;
+    case "DIAPER":
+      await prisma.diaperLog.delete({ where: { id } });
+      break;
+    case "HEALTH":
+      await prisma.healthLog.delete({ where: { id } });
+      break;
+    case "GROWTH":
+      await prisma.growthRecord.delete({ where: { id } });
+      break;
+  }
+
+  revalidatePath("/");
+}

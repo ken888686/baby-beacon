@@ -84,3 +84,33 @@ export const logSleep = withBabyAccess(
   },
   BabyRole.ADMIN,
 );
+
+export const updateSleep = withBabyAccess(
+  async (
+    babyId: string,
+    id: string,
+    data: {
+      startTime: Date;
+      endTime?: Date;
+      quality?: string;
+      note?: string;
+    },
+  ) => {
+    if (data.endTime && data.startTime > data.endTime) {
+      throw new Error("Start time must be before end time");
+    }
+
+    const sleep = await prisma.sleepLog.update({
+      where: { id },
+      data: {
+        startTime: data.startTime,
+        endTime: data.endTime,
+        quality: data.quality,
+      },
+    });
+
+    revalidatePath("/");
+    return sleep;
+  },
+  BabyRole.ADMIN,
+);
