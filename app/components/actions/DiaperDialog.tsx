@@ -1,9 +1,9 @@
 "use client";
 
-import { logFeed, updateFeed } from "@/app/actions/feed";
+import { logDiaper, updateDiaper } from "@/app/actions/diaper";
 import { QuickAction } from "@/app/components/QuickAction";
-import { FeedLog } from "@/app/generated/prisma/client";
-import { FeedType, Side } from "@/app/generated/prisma/enums";
+import { DiaperLog } from "@/app/generated/prisma/client";
+import { DiaperType } from "@/app/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -22,56 +22,64 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parse } from "date-fns";
-import { ChevronDownIcon, Milk } from "lucide-react";
+import { Baby, ChevronDownIcon } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-interface FeedDialogProps {
+interface DiaperDialogProps {
   babyId: string;
 }
 
-interface FeedFormProps {
+interface DiaperFormProps {
   babyId: string;
-  defaultType?: FeedType;
+  defaultType?: DiaperType;
   onSuccess?: () => void;
-  initialData?: FeedLog;
+  initialData?: DiaperLog;
 }
 
-export function FeedDialog({ babyId }: FeedDialogProps) {
+export function DiaperDialog({ babyId }: DiaperDialogProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <QuickAction
-      label="Feed"
-      icon={Milk}
+      label="Diaper"
+      icon={Baby}
       open={open}
       onOpenChange={setOpen}
-      description="Log a feeding session"
+      description="Log a diaper change"
     >
-      <Tabs defaultValue="bottle" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="bottle">Bottle</TabsTrigger>
-          <TabsTrigger value="breast">Breast</TabsTrigger>
-          <TabsTrigger value="solid">Solid</TabsTrigger>
+      <Tabs defaultValue="wet" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="wet">Wet</TabsTrigger>
+          <TabsTrigger value="dirty">Dirty</TabsTrigger>
+          <TabsTrigger value="mixed">Mixed</TabsTrigger>
+          <TabsTrigger value="dry">Dry</TabsTrigger>
         </TabsList>
-        <TabsContent value="bottle" className="py-4">
-          <FeedForm
+        <TabsContent value="wet" className="py-4">
+          <DiaperForm
             babyId={babyId}
-            defaultType={FeedType.BOTTLE_FORMULA}
+            defaultType={DiaperType.WET}
             onSuccess={() => setOpen(false)}
           />
         </TabsContent>
-        <TabsContent value="breast" className="py-4">
-          <FeedForm
+        <TabsContent value="dirty" className="py-4">
+          <DiaperForm
             babyId={babyId}
-            defaultType={FeedType.BREAST}
+            defaultType={DiaperType.DIRTY}
             onSuccess={() => setOpen(false)}
           />
         </TabsContent>
-        <TabsContent value="solid" className="py-4">
-          <FeedForm
+        <TabsContent value="mixed" className="py-4">
+          <DiaperForm
             babyId={babyId}
-            defaultType={FeedType.SOLID}
+            defaultType={DiaperType.MIXED}
+            onSuccess={() => setOpen(false)}
+          />
+        </TabsContent>
+        <TabsContent value="dry" className="py-4">
+          <DiaperForm
+            babyId={babyId}
+            defaultType={DiaperType.DRY}
             onSuccess={() => setOpen(false)}
           />
         </TabsContent>
@@ -80,22 +88,22 @@ export function FeedDialog({ babyId }: FeedDialogProps) {
   );
 }
 
-export function FeedForm({
+export function DiaperForm({
   babyId,
   defaultType,
   onSuccess,
   initialData,
-}: FeedFormProps) {
+}: DiaperFormProps) {
   const [date, setDate] = useState<Date | undefined>(
     initialData ? new Date(initialData.recordedAt) : new Date(),
   );
   const [dateOpen, setDateOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [type, setType] = useState<FeedType>(
-    initialData?.type || defaultType || FeedType.BOTTLE_FORMULA,
+  const [type, setType] = useState<DiaperType>(
+    initialData?.type || defaultType || DiaperType.WET,
   );
 
-  async function handleLogFeed(formData: FormData) {
+  async function handleLogDiaper(formData: FormData) {
     if (!date) {
       toast.warning("Please select a date");
       return;
@@ -108,69 +116,61 @@ export function FeedForm({
       new Date(),
     );
 
-    const amountStr = formData.get("amount") as string;
-    const durationStr = formData.get("duration") as string;
+    const color = formData.get("color") as string | undefined;
+    const texture = formData.get("texture") as string | undefined;
     const note = formData.get("note") as string | undefined;
-    const side = formData.get("side") as Side | undefined;
-    const selectedType = (formData.get("type") as FeedType) || type;
-
-    const amount = amountStr ? parseFloat(amountStr) : undefined;
-    const duration = durationStr ? parseInt(durationStr) : undefined;
+    const selectedType = (formData.get("type") as DiaperType) || type;
 
     startTransition(async () => {
       try {
         if (initialData) {
-          await updateFeed(initialData.id, {
+          await updateDiaper(initialData.id, {
             type: selectedType,
-            amount,
-            duration,
-            side,
+            color,
+            texture,
             note,
             recordedAt: dateTime,
           });
-          toast.success("Feed updated successfully");
+          toast.success("Diaper record updated");
         } else {
-          await logFeed({
+          await logDiaper({
             babyId,
             type: selectedType,
-            amount,
-            duration,
-            side,
+            color,
+            texture,
             note,
             recordedAt: dateTime,
           });
-          toast.success("Feed logged successfully");
+          toast.success("Diaper logged successfully");
         }
         onSuccess?.();
       } catch (error) {
-        toast.error("Failed to save feed: " + error);
+        toast.error("Failed to save diaper record: " + error);
       }
     });
   }
 
-  const isBottle =
-    type === FeedType.BOTTLE_FORMULA || type === FeedType.BOTTLE_BREAST_MILK;
-  const isBreast = type === FeedType.BREAST;
+  const showDetails = type === DiaperType.DIRTY || type === DiaperType.MIXED;
 
   return (
-    <form action={handleLogFeed} className="flex flex-col gap-4">
-      {/* Type Selection (Visible only for Bottle to switch between Formula/Milk) */}
-      {isBottle && (
+    <form action={handleLogDiaper} className="flex flex-col gap-4">
+      {/* Type Selection - Useful when in Edit mode or generic form */}
+      {initialData && (
         <Field>
-          <FieldLabel>Liquid Type</FieldLabel>
+          <FieldLabel>Type</FieldLabel>
           <Select
             name="type"
             defaultValue={type}
-            onValueChange={(val) => setType(val as FeedType)}
+            onValueChange={(val) => setType(val as DiaperType)}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={FeedType.BOTTLE_FORMULA}>Formula</SelectItem>
-              <SelectItem value={FeedType.BOTTLE_BREAST_MILK}>
-                Breast Milk
-              </SelectItem>
+              <SelectItem value={DiaperType.WET}>Wet</SelectItem>
+              <SelectItem value={DiaperType.DIRTY}>Dirty</SelectItem>
+              <SelectItem value={DiaperType.MIXED}>Mixed</SelectItem>
+              <SelectItem value={DiaperType.DRY}>Dry</SelectItem>
             </SelectContent>
           </Select>
         </Field>
@@ -218,46 +218,45 @@ export function FeedForm({
         </div>
       </FieldGroup>
 
-      {/* Amount (Bottle & Solid) */}
-      {(isBottle || type === FeedType.SOLID) && (
-        <Field>
-          <FieldLabel>
-            Amount ({type === FeedType.SOLID ? "g" : "ml"})
-          </FieldLabel>
-          <Input
-            type="number"
-            name="amount"
-            placeholder={type === FeedType.SOLID ? "100" : "150"}
-            step="0.5"
-            defaultValue={initialData?.amount || ""}
-          />
-        </Field>
-      )}
-
-      {/* Breast Specific Fields */}
-      {isBreast && (
+      {/* Details (Color/Texture) - Only for Dirty/Mixed */}
+      {showDetails && (
         <>
           <Field>
-            <FieldLabel>Side</FieldLabel>
-            <Select name="side" defaultValue={initialData?.side || Side.BOTH}>
+            <FieldLabel>Color</FieldLabel>
+            <Select
+              name="color"
+              defaultValue={initialData?.color || undefined}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select color" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={Side.LEFT}>Left</SelectItem>
-                <SelectItem value={Side.RIGHT}>Right</SelectItem>
-                <SelectItem value={Side.BOTH}>Both</SelectItem>
+                <SelectItem value="yellow">Yellow</SelectItem>
+                <SelectItem value="brown">Brown</SelectItem>
+                <SelectItem value="green">Green</SelectItem>
+                <SelectItem value="black">Black</SelectItem>
+                <SelectItem value="red">Red (See Doctor)</SelectItem>
+                <SelectItem value="white">White (See Doctor)</SelectItem>
               </SelectContent>
             </Select>
           </Field>
           <Field>
-            <FieldLabel>Duration (minutes)</FieldLabel>
-            <Input
-              type="number"
-              name="duration"
-              placeholder="15"
-              defaultValue={initialData?.duration || ""}
-            />
+            <FieldLabel>Texture</FieldLabel>
+            <Select
+              name="texture"
+              defaultValue={initialData?.texture || undefined}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select texture" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="soft">Soft</SelectItem>
+                <SelectItem value="hard">Hard</SelectItem>
+                <SelectItem value="loose">Loose</SelectItem>
+                <SelectItem value="watery">Watery</SelectItem>
+                <SelectItem value="mucous">Mucous</SelectItem>
+              </SelectContent>
+            </Select>
           </Field>
         </>
       )}

@@ -1,6 +1,11 @@
 "use client";
 
-import { endSleep, logSleep, startSleep } from "@/app/actions/sleep";
+import {
+  endSleep,
+  logSleep,
+  startSleep,
+  updateSleep,
+} from "@/app/actions/sleep";
 import { QuickAction } from "@/app/components/QuickAction";
 import { SleepLog } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
@@ -26,6 +31,7 @@ interface SleepDialogProps {
 interface SleepFormProps {
   babyId: string;
   onSuccess?: () => void;
+  initialData?: SleepLog;
 }
 
 export function SleepDialog({ babyId, lastSleep }: SleepDialogProps) {
@@ -98,16 +104,20 @@ export function SleepDialog({ babyId, lastSleep }: SleepDialogProps) {
   );
 }
 
-export function SleepForm({ babyId, onSuccess }: SleepFormProps) {
+export function SleepForm({ babyId, onSuccess, initialData }: SleepFormProps) {
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    initialData ? new Date(initialData.startTime) : new Date(),
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    initialData?.endTime ? new Date(initialData.endTime) : new Date(),
+  );
   const [isPending, startTransition] = useTransition();
 
   async function handleLogSleep(formData: FormData) {
-    if (!startDate || !endDate) {
-      toast.warning("Please select a start and end date");
+    if (!startDate) {
+      toast.warning("Please select a start date");
       return;
     }
     const startTime = formData.get("startTime") as string;
@@ -117,25 +127,38 @@ export function SleepForm({ babyId, onSuccess }: SleepFormProps) {
       "yyyy-M-d'T'HH:mm:ss",
       new Date(),
     );
-    const endDateTime = parse(
-      `${endDate.getFullYear()}-${endDate.getMonth() + 1}-${endDate.getDate()}T${endTime}`,
-      "yyyy-M-d'T'HH:mm:ss",
-      new Date(),
-    );
+
+    let endDateTime: Date | undefined;
+    if (endDate && endTime) {
+      endDateTime = parse(
+        `${endDate.getFullYear()}-${endDate.getMonth() + 1}-${endDate.getDate()}T${endTime}`,
+        "yyyy-M-d'T'HH:mm:ss",
+        new Date(),
+      );
+    }
 
     const note = formData.get("note") as string | undefined;
 
     startTransition(async () => {
       try {
-        await logSleep(babyId, {
-          startTime: startDateTime,
-          endTime: endDateTime,
-          quality: note,
-        });
-        toast.success("Sleep logged manually");
+        if (initialData) {
+          await updateSleep(babyId, initialData.id, {
+            startTime: startDateTime,
+            endTime: endDateTime,
+            quality: note,
+          });
+          toast.success("Sleep record updated");
+        } else {
+          await logSleep(babyId, {
+            startTime: startDateTime,
+            endTime: endDateTime,
+            quality: note,
+          });
+          toast.success("Sleep logged manually");
+        }
         onSuccess?.();
       } catch (error) {
-        toast.error("Failed to log sleep: " + error);
+        toast.error("Failed to save sleep: " + error);
       }
     });
   }
@@ -176,7 +199,10 @@ export function SleepForm({ babyId, onSuccess }: SleepFormProps) {
               id="startTime"
               name="startTime"
               step="1"
-              defaultValue={format(new Date(), "HH:mm:ss")}
+              defaultValue={format(
+                initialData ? new Date(initialData.startTime) : new Date(),
+                "HH:mm:ss",
+              )}
             />
           </Field>
         </div>
@@ -217,7 +243,9 @@ export function SleepForm({ babyId, onSuccess }: SleepFormProps) {
               name="endTime"
               step="1"
               defaultValue={format(
-                new Date().setHours(new Date().getHours() + 1),
+                initialData?.endTime
+                  ? new Date(initialData.endTime)
+                  : new Date().setHours(new Date().getHours() + 1),
                 "HH:mm:ss",
               )}
             />
@@ -226,10 +254,18 @@ export function SleepForm({ babyId, onSuccess }: SleepFormProps) {
       </FieldGroup>
       <Field>
         <FieldLabel>Note</FieldLabel>
-        <Input name="note" placeholder="Enter text" />
+        <Input
+          name="note"
+          placeholder="Enter text"
+          defaultValue={initialData?.quality || ""}
+        />
       </Field>
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : "Save Record"}
+        {isPending
+          ? "Saving..."
+          : initialData
+            ? "Update Record"
+            : "Save Record"}
       </Button>
     </form>
   );

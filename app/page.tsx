@@ -1,16 +1,16 @@
 import { auth } from "@/lib/auth";
-import { formatDistanceToNow } from "date-fns";
 import { Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
 import { cookies, headers } from "next/headers";
 import { getBabies, getBabyStats } from "./actions/baby";
 import { getTimeline, TimelineItem } from "./actions/timeline";
+import { DiaperDialog } from "./components/actions/DiaperDialog";
 import { FeedDialog } from "./components/actions/FeedDialog";
 import { SleepDialog } from "./components/actions/SleepDialog";
 import { Header } from "./components/Header";
+import { LiveStatusSection } from "./components/LiveStatusSection";
 import { QuickAction } from "./components/QuickAction";
 import { RecordList } from "./components/RecordList";
-import { StatusCard } from "./components/StatusCard";
-import { FeedLog, FeedType, SleepLog } from "./generated/prisma/client";
+import { FeedLog, SleepLog } from "./generated/prisma/client";
 
 export default async function Home() {
   let recentRecords: TimelineItem[] = [];
@@ -43,39 +43,6 @@ export default async function Home() {
     }
   }
 
-  // Format Sleep Status
-  let sleepValue = "--";
-  let sleepSubValue = "No records";
-
-  if (stats.lastSleep) {
-    if (!stats.lastSleep.endTime) {
-      sleepValue = "Sleeping...";
-      sleepSubValue = `Started ${formatDistanceToNow(stats.lastSleep.startTime, { addSuffix: true })}`;
-    } else {
-      const durationMs =
-        stats.lastSleep.endTime.getTime() - stats.lastSleep.startTime.getTime();
-      const hours = Math.floor(durationMs / (1000 * 60 * 60));
-      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      sleepValue = `${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
-      sleepSubValue = `Woke up ${formatDistanceToNow(stats.lastSleep.endTime, { addSuffix: true })}`;
-    }
-  }
-
-  // Format Feed Status
-  let feedValue = "--";
-  let feedSubValue = "No records";
-
-  if (stats.lastFeed) {
-    if (stats.lastFeed.type === FeedType.BREAST) {
-      feedValue = `${Math.round((stats.lastFeed.duration || 0) / 60)}m`;
-    } else if (stats.lastFeed.type === FeedType.SOLID) {
-      feedValue = "Solid";
-    } else {
-      feedValue = `${stats.lastFeed.amount || 0}ml`;
-    }
-    feedSubValue = `${formatDistanceToNow(stats.lastFeed.recordedAt, { addSuffix: true })}`;
-  }
-
   return (
     <main className="bg-background min-h-screen">
       <div className="mx-auto max-w-md space-y-8 px-4 py-2">
@@ -83,24 +50,7 @@ export default async function Home() {
         <Header currentBabyId={currentBabyId} />
 
         {/* Status Section */}
-        <section className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <StatusCard
-              title="Last Sleep"
-              value={sleepValue}
-              subValue={sleepSubValue}
-              icon={Moon}
-              className="border-slate-200 bg-slate-50/50 text-slate-700"
-            />
-            <StatusCard
-              title="Last Feed"
-              value={feedValue}
-              subValue={feedSubValue}
-              icon={Milk}
-              className="border-amber-200 bg-amber-50/50 text-amber-800"
-            />
-          </div>
-        </section>
+        <LiveStatusSection babyId={currentBabyId} initialStats={stats} />
 
         {/* Quick Actions */}
         <section>
@@ -118,7 +68,11 @@ export default async function Home() {
             ) : (
               <QuickAction label="Feed" icon={Milk} />
             )}
-            <QuickAction label="Diaper" icon={Baby} />
+            {currentBabyId ? (
+              <DiaperDialog babyId={currentBabyId} />
+            ) : (
+              <QuickAction label="Diaper" icon={Baby} />
+            )}
             <QuickAction label="Health" icon={Thermometer} />
             <QuickAction label="Growth" icon={Ruler} />
           </div>

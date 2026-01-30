@@ -34,3 +34,36 @@ export async function logFeed(data: {
   revalidatePath("/");
   return log;
 }
+
+export async function updateFeed(
+  id: string,
+  data: {
+    type: FeedType;
+    amount?: number;
+    duration?: number;
+    side?: Side;
+    note?: string;
+    recordedAt?: Date;
+  },
+) {
+  const feed = await prisma.feedLog.findUnique({ where: { id } });
+  if (!feed) throw new Error("Feed record not found");
+
+  await verifyBabyAccess(feed.babyId, BabyRole.ADMIN);
+  const validated = logFeedSchema.parse({ ...data, babyId: feed.babyId });
+
+  const log = await prisma.feedLog.update({
+    where: { id },
+    data: {
+      type: validated.type as FeedType,
+      amount: validated.amount,
+      duration: validated.duration,
+      side: validated.side as Side,
+      note: validated.note,
+      recordedAt: validated.recordedAt || new Date(),
+    },
+  });
+
+  revalidatePath("/");
+  return log;
+}
