@@ -32,13 +32,13 @@ export async function createBaby(data: {
   return baby;
 }
 
-export async function getBabies() {
-  const session = await getSessionOrThrow();
+export async function getBabies(userId?: string) {
+  const currentUserId = userId || (await getSessionOrThrow()).user.id;
   return await prisma.baby.findMany({
     where: {
       users: {
         some: {
-          userId: session.user.id,
+          userId: currentUserId,
         },
       },
     },

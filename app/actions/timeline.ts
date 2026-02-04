@@ -12,12 +12,16 @@ import {
   SleepLog,
 } from "@/app/generated/prisma/client";
 import {
+  checkBabyPermission,
   getSessionOrThrow,
-  verifyBabyAccess,
   withBabyAccess,
 } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+
+interface DeletableDelegate {
+  delete: (args: { where: { id: string } }) => Promise<unknown>;
+}
 
 export type TimelineItem = {
   id: string;
@@ -199,59 +203,49 @@ export async function deleteTimelineRecord(
   id: string,
   category: "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH",
 ) {
-  await getSessionOrThrow();
+  const session = await getSessionOrThrow();
 
   let babyId: string | undefined;
+  let modelDelegate: DeletableDelegate | undefined;
 
-  // 1. Find the record first to get babyId
+  // 1. Find the record and identify model
   switch (category) {
     case "SLEEP":
       const sleep = await prisma.sleepLog.findUnique({ where: { id } });
       babyId = sleep?.babyId;
+      modelDelegate = prisma.sleepLog;
       break;
     case "FEED":
       const feed = await prisma.feedLog.findUnique({ where: { id } });
       babyId = feed?.babyId;
+      modelDelegate = prisma.feedLog;
       break;
     case "DIAPER":
       const diaper = await prisma.diaperLog.findUnique({ where: { id } });
       babyId = diaper?.babyId;
+      modelDelegate = prisma.diaperLog;
       break;
     case "HEALTH":
       const health = await prisma.healthLog.findUnique({ where: { id } });
       babyId = health?.babyId;
+      modelDelegate = prisma.healthLog;
       break;
     case "GROWTH":
       const growth = await prisma.growthRecord.findUnique({ where: { id } });
       babyId = growth?.babyId;
+      modelDelegate = prisma.growthRecord;
       break;
   }
 
-  if (!babyId) {
+  if (!babyId || !modelDelegate) {
     throw new Error("Record not found");
   }
 
-  // 2. Verify access BEFORE deleting
-  await verifyBabyAccess(babyId, BabyRole.ADMIN);
+  // 2. Verify access
+  await checkBabyPermission(babyId, session.user.id, BabyRole.ADMIN);
 
   // 3. Delete the record
-  switch (category) {
-    case "SLEEP":
-      await prisma.sleepLog.delete({ where: { id } });
-      break;
-    case "FEED":
-      await prisma.feedLog.delete({ where: { id } });
-      break;
-    case "DIAPER":
-      await prisma.diaperLog.delete({ where: { id } });
-      break;
-    case "HEALTH":
-      await prisma.healthLog.delete({ where: { id } });
-      break;
-    case "GROWTH":
-      await prisma.growthRecord.delete({ where: { id } });
-      break;
-  }
+  await modelDelegate.delete({ where: { id } });
 
   revalidatePath("/");
 }

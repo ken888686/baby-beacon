@@ -25,7 +25,7 @@ export default async function Home() {
   });
 
   if (session) {
-    const babies = await getBabies();
+    const babies = await getBabies(session.user.id);
     if (babies.length > 0) {
       const cookieStore = await cookies();
       const selectedId = cookieStore.get("selectedBabyId")?.value;
