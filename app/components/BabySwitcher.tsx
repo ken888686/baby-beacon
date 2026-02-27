@@ -27,24 +27,21 @@ export function BabySwitcher({
   currentBabyId?: string;
 }) {
   const allBabies = use(babies);
-  const [selectedBaby, setSelectedBaby] = useState<Baby>(
-    allBabies.find((b) => b.id === currentBabyId) ??
-      allBabies[0] ?? {
-        id: "placeholder",
-        name: "Add a Baby",
-        birthDate: new Date(),
-        gender: "MALE" as Gender,
-        photoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-  );
+  const selectedBaby = allBabies.find((b) => b.id === currentBabyId) ??
+    allBabies[0] ?? {
+      id: "placeholder",
+      name: "Add a Baby",
+      birthDate: new Date(),
+      gender: "MALE" as Gender,
+      photoUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingBaby, setEditingBaby] = useState<Baby | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleBabySelect = (baby: Baby) => {
-    setSelectedBaby(baby);
     startTransition(async () => {
       await switchBaby(baby.id);
     });

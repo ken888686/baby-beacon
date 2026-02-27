@@ -34,7 +34,8 @@ export function QuickAction({
     <Button
       variant="outline"
       onClick={!children ? onClick : undefined}
-      className="group border-secondary/50 hover:border-primary/50 hover:bg-secondary/20 flex h-28 flex-col items-center justify-center rounded-2xl p-4 shadow-sm transition-all duration-200"
+      aria-label={label}
+      className="group border-secondary/50 hover:border-primary/50 hover:bg-secondary/20 flex h-28 flex-col items-center justify-center rounded-2xl p-4 shadow-soft-out transition-all duration-200 active:scale-95 cursor-pointer"
     >
       <div className="relative mb-2">
         <div className="bg-secondary/30 group-hover:bg-secondary/50 text-foreground rounded-2xl p-3 transition-colors">
