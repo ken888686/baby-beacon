@@ -64,14 +64,14 @@ export function LiveStatusSection({
           value={sleepValue}
           subValue={sleepSubValue}
           icon={Moon}
-          className="border-slate-200 bg-slate-50/50 text-slate-700"
+          className="bg-secondary/40 text-foreground"
         />
         <StatusCard
           title="Last Feed"
           value={feedValue}
           subValue={feedSubValue}
           icon={Milk}
-          className="border-amber-200 bg-amber-50/50 text-amber-800"
+          className="bg-primary/10 text-foreground"
         />
       </div>
     </section>

@@ -5,6 +5,8 @@ import { getBabies, getBabyStats } from "./actions/baby";
 import { getTimeline, TimelineItem } from "./actions/timeline";
 import { DiaperDialog } from "./components/actions/DiaperDialog";
 import { FeedDialog } from "./components/actions/FeedDialog";
+import { GrowthDialog } from "./components/actions/GrowthDialog";
+import { HealthDialog } from "./components/actions/HealthDialog";
 import { SleepDialog } from "./components/actions/SleepDialog";
 import { Header } from "./components/Header";
 import { LiveStatusSection } from "./components/LiveStatusSection";
@@ -25,7 +27,7 @@ export default async function Home() {
   });
 
   if (session) {
-    const babies = await getBabies();
+    const babies = await getBabies(session.user.id);
     if (babies.length > 0) {
       const cookieStore = await cookies();
       const selectedId = cookieStore.get("selectedBabyId")?.value;
@@ -45,7 +47,7 @@ export default async function Home() {
 
   return (
     <main className="bg-background min-h-screen">
-      <div className="mx-auto max-w-md space-y-8 px-4 py-2">
+      <div className="mx-auto max-w-md md:max-w-lg space-y-8 px-4 py-6">
         {/* Header */}
         <Header currentBabyId={currentBabyId} />
 
@@ -73,8 +75,16 @@ export default async function Home() {
             ) : (
               <QuickAction label="Diaper" icon={Baby} />
             )}
-            <QuickAction label="Health" icon={Thermometer} />
-            <QuickAction label="Growth" icon={Ruler} />
+            {currentBabyId ? (
+              <HealthDialog babyId={currentBabyId} />
+            ) : (
+              <QuickAction label="Health" icon={Thermometer} />
+            )}
+            {currentBabyId ? (
+              <GrowthDialog babyId={currentBabyId} />
+            ) : (
+              <QuickAction label="Growth" icon={Ruler} />
+            )}
           </div>
         </section>
 

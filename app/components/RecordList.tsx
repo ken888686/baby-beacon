@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteTimelineRecord } from "@/app/actions/timeline";
-import { DiaperLog, FeedLog, SleepLog } from "@/app/generated/prisma/client";
+import { DiaperLog, FeedLog, GrowthRecord, HealthLog, SleepLog } from "@/app/generated/prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,8 @@ import { toast } from "sonner";
 import { TimelineItem } from "../actions/timeline";
 import { DiaperForm } from "./actions/DiaperDialog";
 import { FeedForm } from "./actions/FeedDialog";
+import { GrowthForm } from "./actions/GrowthDialog";
+import { HealthForm } from "./actions/HealthDialog";
 import { SleepForm } from "./actions/SleepDialog";
 
 type Category = "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
@@ -66,7 +68,7 @@ export function RecordList({ records }: RecordListProps) {
       case "DIAPER":
         return Baby;
       case "HEALTH":
-        return Thermometer; // 或 Syringe 視情況而定
+        return Thermometer;
       case "GROWTH":
         return Ruler;
       default:
@@ -77,9 +79,9 @@ export function RecordList({ records }: RecordListProps) {
   const getIconColor = (category: string) => {
     switch (category) {
       case "SLEEP":
-        return "bg-slate-100 text-slate-600";
+        return "bg-secondary/30 text-foreground/70";
       case "FEED":
-        return "bg-amber-100 text-amber-700";
+        return "bg-primary/20 text-foreground/80";
       case "DIAPER":
         return "bg-emerald-100 text-emerald-600";
       case "HEALTH":
@@ -123,10 +125,10 @@ export function RecordList({ records }: RecordListProps) {
             return (
               <Card
                 key={record.id}
-                className="group border-secondary/30 hover:bg-secondary/5 animate-fade-in shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                className="group border-none shadow-soft-out animate-fade-in transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
               >
                 <CardContent className="flex items-center gap-4 p-4 pr-2">
-                  <div className={`rounded-full p-2.5 ${colorClass}`}>
+                  <div className={`rounded-full p-2.5 shadow-soft-in ${colorClass}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
@@ -201,12 +203,21 @@ export function RecordList({ records }: RecordListProps) {
                 onSuccess={() => setEditingRecord(null)}
               />
             )}
-            {editingRecord &&
-              !["FEED", "SLEEP", "DIAPER"].includes(editingRecord.category) && (
-                <p className="py-4 text-center text-sm opacity-60">
-                  Editing for {editingRecord.category} is not implemented yet.
-                </p>
-              )}
+            {editingRecord?.category === "HEALTH" && (
+              <HealthForm
+                babyId={(editingRecord.metadata as HealthLog).babyId}
+                type={(editingRecord.metadata as HealthLog).type}
+                initialData={editingRecord.metadata as HealthLog}
+                onSuccess={() => setEditingRecord(null)}
+              />
+            )}
+            {editingRecord?.category === "GROWTH" && (
+              <GrowthForm
+                babyId={(editingRecord.metadata as GrowthRecord).babyId}
+                initialData={editingRecord.metadata as GrowthRecord}
+                onSuccess={() => setEditingRecord(null)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

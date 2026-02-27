@@ -21,23 +21,23 @@ export function StatusCard({
   return (
     <Card
       className={cn(
-        "h-56 border shadow-sm transition-all active:scale-[0.98]",
+        "h-56 border-none shadow-soft-out transition-all active:scale-[0.98] rounded-2xl",
         className,
       )}
     >
       <CardContent className="p-5">
         <div className="mb-3 flex items-start justify-between">
-          <span className="text-sm font-semibold tracking-wider uppercase opacity-70">
+          <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-50">
             {title}
           </span>
-          <div className="rounded-xl bg-white/60 p-2">
+          <div className="rounded-xl bg-white/40 p-2 shadow-soft-in">
             <Icon className="h-5 w-5" />
           </div>
         </div>
-        <div>
-          <h3 className="text-2xl leading-tight font-bold">{value}</h3>
+        <div className="flex flex-col justify-end h-28">
+          <h3 className="text-2xl leading-tight font-bold tracking-tight">{value}</h3>
           {subValue && (
-            <p className="mt-1 text-sm font-medium opacity-60">{subValue}</p>
+            <p className="mt-1 text-xs font-medium opacity-60 leading-relaxed">{subValue}</p>
           )}
         </div>
       </CardContent>
