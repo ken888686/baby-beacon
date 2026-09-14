@@ -1,158 +1,20 @@
 "use server";
 
-import {
-  BabyRole,
-  DiaperLog,
-  DiaperType,
-  FeedLog,
-  FeedType,
-  GrowthRecord,
-  HealthLog,
-  HealthType,
-  SleepLog,
-} from "@/app/generated/prisma/client";
+import { BabyRole } from "@/app/generated/prisma/client";
 import {
   checkBabyPermission,
   getSessionOrThrow,
   withBabyAccess,
 } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import {
+  mapLegacyTimelineItem,
+  type TimelineCategory,
+  type TimelineItem,
+} from "@/lib/timeline";
 import { revalidatePath } from "next/cache";
 
-export type TimelineItem = {
-  id: string;
-  category: "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
-  title: string;
-  details: string;
-  recordedAt: Date;
-  metadata?: SleepLog | FeedLog | DiaperLog | HealthLog | GrowthRecord;
-};
-
-type TimelineCategory = TimelineItem["category"];
-
-function getLegacyTimelineItem(
-  category: TimelineCategory,
-  log: SleepLog | FeedLog | DiaperLog | HealthLog | GrowthRecord,
-): TimelineItem {
-  switch (category) {
-    case "SLEEP": {
-      const sleep = log as SleepLog;
-      const duration = sleep.endTime
-        ? `${Math.round((sleep.endTime.getTime() - sleep.startTime.getTime()) / (1000 * 60))}m`
-        : "Sleeping...";
-      return {
-        id: sleep.id,
-        category,
-        title: sleep.endTime ? "Sleep" : "Sleeping",
-        details:
-          `${duration} ${sleep.quality ? `(${sleep.quality})` : ""}`.trim(),
-        recordedAt: sleep.startTime,
-        metadata: sleep,
-      };
-    }
-    case "FEED": {
-      const feed = log as FeedLog;
-      let title = "Feed";
-      let details = "";
-
-      switch (feed.type) {
-        case FeedType.BREAST:
-          title = "Breast Feed";
-          details = `${feed.side ?? "Both"} side, ${feed.duration ?? 0}m`;
-          break;
-        case FeedType.BOTTLE_FORMULA:
-          title = "Bottle (Formula)";
-          details = [feed.amount ? `${feed.amount}ml` : null, feed.note]
-            .filter(Boolean)
-            .join(", ");
-          break;
-        case FeedType.BOTTLE_BREAST_MILK:
-          title = "Bottle (Breast Milk)";
-          details = feed.amount ? `${feed.amount}ml` : "";
-          break;
-        case FeedType.SOLID:
-          title = "Solid Food";
-          details = feed.note || "";
-          break;
-      }
-
-      return {
-        id: feed.id,
-        category,
-        title,
-        details,
-        recordedAt: feed.recordedAt,
-        metadata: feed,
-      };
-    }
-    case "DIAPER": {
-      const diaper = log as DiaperLog;
-      const details =
-        diaper.type === DiaperType.WET || diaper.type === DiaperType.DRY
-          ? diaper.note || ""
-          : [diaper.color, diaper.texture, diaper.note]
-              .filter(Boolean)
-              .join(", ");
-      return {
-        id: diaper.id,
-        category,
-        title: "Diaper Change",
-        details,
-        recordedAt: diaper.recordedAt,
-        metadata: diaper,
-      };
-    }
-    case "HEALTH": {
-      const health = log as HealthLog;
-      let title = "Health Log";
-      let details = health.description || health.note || "";
-
-      switch (health.type) {
-        case HealthType.TEMPERATURE:
-          title = "Temperature";
-          details = health.value === null ? "" : `${health.value}°C`;
-          break;
-        case HealthType.VACCINE:
-          title = "Vaccine";
-          break;
-        case HealthType.MEDICINE:
-          title = "Medicine";
-          break;
-        case HealthType.SYMPTOM:
-          title = "Symptom";
-          details = health.symptoms.join(", ");
-          break;
-      }
-
-      return {
-        id: health.id,
-        category,
-        title,
-        details,
-        recordedAt: health.recordedAt,
-        metadata: health,
-      };
-    }
-    case "GROWTH": {
-      const growth = log as GrowthRecord;
-      const details = [
-        growth.height ? `H: ${growth.height}cm` : null,
-        growth.weight ? `W: ${growth.weight}kg` : null,
-        growth.headCircumference ? `HC: ${growth.headCircumference}cm` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      return {
-        id: growth.id,
-        category,
-        title: "Growth Check",
-        details,
-        recordedAt: growth.recordedAt,
-        metadata: growth,
-      };
-    }
-  }
-}
+export type { TimelineCategory, TimelineItem } from "@/lib/timeline";
 
 export const getTimeline = withBabyAccess(
   async (babyId: string, limit = 20): Promise<TimelineItem[]> => {
@@ -218,11 +80,11 @@ export const getTimeline = withBabyAccess(
         undefined,
     }));
     const legacyItems = [
-      ...sleepLogs.map((log) => getLegacyTimelineItem("SLEEP", log)),
-      ...feedLogs.map((log) => getLegacyTimelineItem("FEED", log)),
-      ...diaperLogs.map((log) => getLegacyTimelineItem("DIAPER", log)),
-      ...healthLogs.map((log) => getLegacyTimelineItem("HEALTH", log)),
-      ...growthRecords.map((log) => getLegacyTimelineItem("GROWTH", log)),
+      ...sleepLogs.map((log) => mapLegacyTimelineItem("SLEEP", log)),
+      ...feedLogs.map((log) => mapLegacyTimelineItem("FEED", log)),
+      ...diaperLogs.map((log) => mapLegacyTimelineItem("DIAPER", log)),
+      ...healthLogs.map((log) => mapLegacyTimelineItem("HEALTH", log)),
+      ...growthRecords.map((log) => mapLegacyTimelineItem("GROWTH", log)),
     ];
 
     return [...currentItems, ...legacyItems]
