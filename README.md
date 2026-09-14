@@ -25,7 +25,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Testing**: [Vitest](https://vitest.dev/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- **Testing**: Node.js test runner with TypeScript support via [tsx](https://tsx.is/)
 - **Runtime**: [Bun](https://bun.sh/)
 
 ## 🚀 Getting Started
@@ -88,15 +88,14 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 
 ### 🧪 Testing
 
-The project uses Vitest and React Testing Library for comprehensive testing.
+Run the unit tests with:
 
 ```bash
-# Run all tests
 bun run test
-
-# Run tests in watch mode
-bun run test:watch
 ```
+
+The current unit coverage focuses on ActivityLog summaries and payload builders,
+which are shared by all record Actions and the database backfill command.
 
 ## 📂 Project Structure
 

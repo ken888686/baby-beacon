@@ -6,11 +6,11 @@ import {
   buildActivityLogUpdate,
   getFeedSummary,
 } from "@/lib/activity-log";
-import { checkBabyPermission } from "@/lib/auth-utils";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logFeedSchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 export const logFeed = getBabyActionClient(BabyRole.ADMIN)
@@ -46,7 +46,7 @@ export const logFeed = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });
 
@@ -59,10 +59,12 @@ export const updateFeed = authActionClient
   )
   .action(async ({ parsedInput, ctx }) => {
     const { id, data } = parsedInput;
-    const feed = await prisma.feedLog.findUnique({ where: { id } });
-    if (!feed) throw new Error("Feed record not found");
-
-    await checkBabyPermission(feed.babyId, ctx.session.user.id, BabyRole.ADMIN);
+    const feed = await requireBabyRecordPermission(
+      await prisma.feedLog.findUnique({ where: { id } }),
+      "Feed",
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
 
     const recordedAt = data.recordedAt || new Date();
     const summary = getFeedSummary(
@@ -99,6 +101,6 @@ export const updateFeed = authActionClient
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });

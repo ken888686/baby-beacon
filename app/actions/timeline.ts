@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 import { type TimelineItem } from "@/lib/timeline";
 import { authActionClient } from "@/lib/safe-action";
 import { uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 export type { TimelineCategory, TimelineItem } from "@/lib/timeline";
@@ -87,5 +87,5 @@ export const deleteTimelineRecord = authActionClient
       throw new Error("Record not found");
     }
 
-    revalidatePath("/");
+    revalidateDashboard();
   });

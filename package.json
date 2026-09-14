@@ -7,7 +7,9 @@
     "build": "eslint && prisma generate && next build",
     "start": "eslint && prisma generate && next start",
     "lint": "eslint",
-    "db:backfill-activity": "tsx scripts/backfill-activity-logs.ts"
+    "db:backfill-activity": "tsx scripts/backfill-activity-logs.ts",
+    "test": "npm run test:unit",
+    "test:unit": "tsx --test tests/unit/activity-log.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

@@ -6,11 +6,11 @@ import {
   buildActivityLogUpdate,
   getGrowthSummary,
 } from "@/lib/activity-log";
-import { checkBabyPermission } from "@/lib/auth-utils";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logGrowthSchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
@@ -37,7 +37,7 @@ export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });
 
@@ -49,13 +49,11 @@ export const updateGrowth = authActionClient
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const growth = await prisma.growthRecord.findUnique({
-      where: { id: parsedInput.id },
-    });
-    if (!growth) throw new Error("Growth record not found");
-
-    await checkBabyPermission(
-      growth.babyId,
+    const growth = await requireBabyRecordPermission(
+      await prisma.growthRecord.findUnique({
+        where: { id: parsedInput.id },
+      }),
+      "Growth",
       ctx.session.user.id,
       BabyRole.ADMIN,
     );
@@ -82,6 +80,6 @@ export const updateGrowth = authActionClient
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });

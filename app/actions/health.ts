@@ -6,11 +6,11 @@ import {
   buildActivityLogUpdate,
   getHealthSummary,
 } from "@/lib/activity-log";
-import { checkBabyPermission } from "@/lib/auth-utils";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logHealthSchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 export const logHealth = getBabyActionClient(BabyRole.ADMIN)
@@ -40,7 +40,7 @@ export const logHealth = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });
 
@@ -52,13 +52,11 @@ export const updateHealth = authActionClient
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const health = await prisma.healthLog.findUnique({
-      where: { id: parsedInput.id },
-    });
-    if (!health) throw new Error("Health record not found");
-
-    await checkBabyPermission(
-      health.babyId,
+    const health = await requireBabyRecordPermission(
+      await prisma.healthLog.findUnique({
+        where: { id: parsedInput.id },
+      }),
+      "Health",
       ctx.session.user.id,
       BabyRole.ADMIN,
     );
@@ -86,6 +84,6 @@ export const updateHealth = authActionClient
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });

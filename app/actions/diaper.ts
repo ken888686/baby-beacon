@@ -6,11 +6,11 @@ import {
   buildActivityLogUpdate,
   getDiaperSummary,
 } from "@/lib/activity-log";
-import { checkBabyPermission } from "@/lib/auth-utils";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logDiaperSchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
@@ -44,7 +44,7 @@ export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });
 
@@ -57,11 +57,9 @@ export const updateDiaper = authActionClient
   )
   .action(async ({ parsedInput, ctx }) => {
     const { id, data } = parsedInput;
-    const diaper = await prisma.diaperLog.findUnique({ where: { id } });
-    if (!diaper) throw new Error("Diaper record not found");
-
-    await checkBabyPermission(
-      diaper.babyId,
+    const diaper = await requireBabyRecordPermission(
+      await prisma.diaperLog.findUnique({ where: { id } }),
+      "Diaper",
       ctx.session.user.id,
       BabyRole.ADMIN,
     );
@@ -99,6 +97,6 @@ export const updateDiaper = authActionClient
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return log;
   });

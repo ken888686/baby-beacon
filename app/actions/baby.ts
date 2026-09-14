@@ -5,7 +5,7 @@ import { getSessionOrThrow, withBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { createBabySchema, updateBabySchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
@@ -24,7 +24,7 @@ export const createBaby = authActionClient
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return baby;
   });
 
@@ -52,7 +52,7 @@ export const switchBaby = getBabyActionClient(BabyRole.VIEWER)
   .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput }) => {
     (await cookies()).set("selectedBabyId", parsedInput.babyId);
-    revalidatePath("/");
+    revalidateDashboard();
   });
 
 export const getBabyStats = withBabyAccess(async (babyId: string) => {
@@ -83,7 +83,7 @@ export const updateBaby = getBabyActionClient(BabyRole.ADMIN)
       data: parsedInput.data,
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return baby;
   });
 
@@ -101,5 +101,5 @@ export const deleteBaby = getBabyActionClient(BabyRole.OWNER)
       cookieStore.delete("selectedBabyId");
     }
 
-    revalidatePath("/");
+    revalidateDashboard();
   });

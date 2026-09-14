@@ -51,6 +51,20 @@ export async function checkBabyPermission(
   return userBaby;
 }
 
+export async function requireBabyRecordPermission<T extends { babyId: string }>(
+  record: T | null,
+  recordName: string,
+  userId: string,
+  requiredRole: BabyRole = BabyRole.ADMIN,
+) {
+  if (!record) {
+    throw new Error(`${recordName} record not found`);
+  }
+
+  await checkBabyPermission(record.babyId, userId, requiredRole);
+  return record;
+}
+
 export async function verifyBabyAccess(
   babyId: string,
   requiredRole: BabyRole = BabyRole.VIEWER,

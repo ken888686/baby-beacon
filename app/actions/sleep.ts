@@ -6,11 +6,11 @@ import {
   buildActivityLogUpdate,
   getSleepSummary,
 } from "@/lib/activity-log";
-import { checkBabyPermission } from "@/lib/auth-utils";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logSleepSchema, uuidSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { z } from "zod";
 
 function isUniqueConstraintError(error: unknown) {
@@ -63,7 +63,7 @@ export const startSleep = getBabyActionClient(BabyRole.ADMIN)
       throw error;
     }
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
   });
 
@@ -102,7 +102,7 @@ export const endSleep = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
   });
 
@@ -136,7 +136,7 @@ export const logSleep = getBabyActionClient(BabyRole.ADMIN)
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
   });
 
@@ -158,10 +158,9 @@ export const updateSleep = authActionClient
       where: { id },
       include: { activityLog: true },
     });
-    if (!sleepLog) throw new Error("Sleep record not found");
-
-    await checkBabyPermission(
-      sleepLog.babyId,
+    const permittedSleepLog = await requireBabyRecordPermission(
+      sleepLog,
+      "Sleep",
       ctx.session.user.id,
       BabyRole.ADMIN,
     );
@@ -174,7 +173,7 @@ export const updateSleep = authActionClient
       quality: data.quality,
     };
 
-    if (sleepLog.activityLog) {
+    if (permittedSleepLog.activityLog) {
       updateData.activityLog = {
         update: buildActivityLogUpdate({
           summary,
@@ -184,7 +183,7 @@ export const updateSleep = authActionClient
     } else {
       updateData.activityLog = {
         create: buildActivityLogData({
-          babyId: sleepLog.babyId,
+          babyId: permittedSleepLog.babyId,
           category: "SLEEP",
           recordedAt: data.startTime,
           summary,
@@ -193,10 +192,10 @@ export const updateSleep = authActionClient
     }
 
     const sleep = await prisma.sleepLog.update({
-      where: { id },
+      where: { id: permittedSleepLog.id },
       data: updateData,
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
   });
