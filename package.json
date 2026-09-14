@@ -1,12 +1,13 @@
 {
   "name": "baby-beacon",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "scripts": {
     "dev": "eslint && prisma generate && next dev",
     "build": "eslint && prisma generate && next build",
     "start": "eslint && prisma generate && next start",
     "lint": "eslint",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:backfill-activity": "tsx scripts/backfill-activity-logs.ts",
     "test": "npm run test:unit",
     "test:unit": "tsx --test tests/unit/activity-log.test.ts"
