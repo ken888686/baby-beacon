@@ -109,9 +109,6 @@ export function RecordList({ records }: RecordListProps) {
         removeOptimisticRecord(deleteId); // Optimistically remove the item
         const result = await deleteTimelineRecord({
           id: deleteId,
-          legacyCategory: optimisticRecords.find(
-            (record) => record.id === deleteId,
-          )?.category,
         });
         if (result?.serverError) {
           toast.error(result.serverError);
