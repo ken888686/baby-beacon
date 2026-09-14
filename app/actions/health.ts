@@ -1,36 +1,57 @@
 "use server";
 
 import { BabyRole, HealthType } from "@/app/generated/prisma/client";
-import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { getBabyActionClient } from "@/lib/safe-action";
 import { logHealthSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
-export async function logHealth(data: {
-  babyId: string;
-  type: HealthType;
-  value?: number;
-  description?: string;
-  symptoms?: string[];
-  note?: string;
-  recordedAt?: Date;
-}) {
-  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
-  const validated = logHealthSchema.parse(data);
+export const logHealth = getBabyActionClient(BabyRole.ADMIN)
+  .schema(logHealthSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    let title = "Health Log";
+    let details = parsedInput.description || parsedInput.note || "";
+    switch (parsedInput.type) {
+      case HealthType.TEMPERATURE:
+        title = "Temperature";
+        details = `${parsedInput.value}°C`;
+        break;
+      case HealthType.VACCINE:
+        title = "Vaccine";
+        break;
+      case HealthType.MEDICINE:
+        title = "Medicine";
+        break;
+      case HealthType.SYMPTOM:
+        title = "Symptom";
+        details = parsedInput.symptoms?.join(", ") || "";
+        break;
+    }
 
-  const log = await prisma.healthLog.create({
-    data: {
-      babyId: validated.babyId,
-      type: validated.type as HealthType,
-      value: validated.value,
-      description: validated.description,
-      symptoms: validated.symptoms,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-      recordedBy: session.user.id,
-    },
+    const log = await prisma.healthLog.create({
+      data: {
+        babyId: parsedInput.babyId,
+        type: parsedInput.type as HealthType,
+        value: parsedInput.value,
+        description: parsedInput.description,
+        symptoms: parsedInput.symptoms,
+        note: parsedInput.note,
+        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedBy: ctx.session.user.id,
+        activityLog: {
+          create: {
+            babyId: parsedInput.babyId,
+            category: "HEALTH",
+            title,
+            details,
+            recordedAt: parsedInput.recordedAt || new Date(),
+          },
+        },
+      },
+    });
+
+    revalidatePath("/");
+    // @ts-expect-error Next.js 16 type workaround
+    revalidateTag(`timeline-${parsedInput.babyId}`);
+    return log;
   });
-
-  revalidatePath("/");
-  return log;
-}

@@ -3,7 +3,6 @@
 import { logGrowth } from "@/app/actions/growth";
 import { QuickAction } from "@/app/components/QuickAction";
 import { GrowthRecord } from "@/app/generated/prisma/client";
-import { combineDateAndTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -13,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { combineDateAndTime } from "@/lib/utils";
 import { format } from "date-fns";
 import { ChevronDownIcon, Ruler } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -44,7 +44,11 @@ interface GrowthFormProps {
   initialData?: GrowthRecord;
 }
 
-export function GrowthForm({ babyId, onSuccess, initialData }: GrowthFormProps) {
+export function GrowthForm({
+  babyId,
+  onSuccess,
+  initialData,
+}: GrowthFormProps) {
   const [date, setDate] = useState<Date | undefined>(
     initialData ? new Date(initialData.recordedAt) : new Date(),
   );
@@ -72,7 +76,7 @@ export function GrowthForm({ babyId, onSuccess, initialData }: GrowthFormProps) 
 
     startTransition(async () => {
       try {
-        await logGrowth({
+        const result = await logGrowth({
           babyId,
           weight: weightStr ? parseFloat(weightStr) : undefined,
           height: heightStr ? parseFloat(heightStr) : undefined,
@@ -80,7 +84,19 @@ export function GrowthForm({ babyId, onSuccess, initialData }: GrowthFormProps) 
           note,
           recordedAt: dateTime,
         });
-        toast.success(initialData ? "Growth record updated" : "Growth record saved");
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Invalid form inputs provided.");
+          return;
+        }
+
+        toast.success(
+          initialData ? "Growth record updated" : "Growth record saved",
+        );
         onSuccess?.();
       } catch (error) {
         toast.error("Failed to save record: " + error);
@@ -168,15 +184,19 @@ export function GrowthForm({ babyId, onSuccess, initialData }: GrowthFormProps) 
 
       <Field>
         <FieldLabel>Note</FieldLabel>
-        <Input 
-          name="note" 
-          placeholder="Optional notes" 
+        <Input
+          name="note"
+          placeholder="Optional notes"
           defaultValue={initialData?.note || ""}
         />
       </Field>
 
       <Button type="submit" disabled={isPending} className="mt-2">
-        {isPending ? "Saving..." : initialData ? "Update Record" : "Save Record"}
+        {isPending
+          ? "Saving..."
+          : initialData
+            ? "Update Record"
+            : "Save Record"}
       </Button>
     </form>
   );

@@ -25,6 +25,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- **Testing**: [Vitest](https://vitest.dev/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 - **Runtime**: [Bun](https://bun.sh/)
 
 ## 🚀 Getting Started
@@ -74,13 +75,26 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
    bun dev
    ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🧪 Testing
+
+The project uses Vitest and React Testing Library for comprehensive testing.
+
+```bash
+# Run all tests
+bun run test
+
+# Run tests in watch mode
+bun run test:watch
+```
 
 ## 📂 Project Structure
 
 - `app/`: Next.js App Router.
-  - `components/`: Business logic components (BabySwitcher, RecordList, etc.)
-  - `generated/`: Custom Prisma Client output location.
+  - `actions/`: Server Actions (Business logic & DB interactions).
+  - `components/`: UI components.
+- `__tests__/`: Comprehensive test suite.
+  - `actions/`: Unit tests for Server Actions.
+  - `components/`: Component & Integration tests.
 - `components/ui/`: Reusable shadcn/ui components.
 - `prisma/`:
   - `schema.prisma`: Multi-model schema for baby tracking.

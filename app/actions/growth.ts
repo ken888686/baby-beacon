@@ -1,34 +1,45 @@
 "use server";
 
 import { BabyRole } from "@/app/generated/prisma/client";
-import { verifyBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { getBabyActionClient } from "@/lib/safe-action";
 import { logGrowthSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
-export async function logGrowth(data: {
-  babyId: string;
-  height?: number;
-  weight?: number;
-  headCircumference?: number;
-  note?: string;
-  recordedAt?: Date;
-}) {
-  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
-  const validated = logGrowthSchema.parse(data);
+export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
+  .schema(logGrowthSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const log = await prisma.growthRecord.create({
+      data: {
+        babyId: parsedInput.babyId,
+        height: parsedInput.height,
+        weight: parsedInput.weight,
+        headCircumference: parsedInput.headCircumference,
+        note: parsedInput.note,
+        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedBy: ctx.session.user.id,
+        activityLog: {
+          create: {
+            babyId: parsedInput.babyId,
+            category: "GROWTH",
+            title: "Growth Check",
+            details: [
+              parsedInput.height ? `H: ${parsedInput.height}cm` : null,
+              parsedInput.weight ? `W: ${parsedInput.weight}kg` : null,
+              parsedInput.headCircumference
+                ? `HC: ${parsedInput.headCircumference}cm`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(", "),
+            recordedAt: parsedInput.recordedAt || new Date(),
+          },
+        },
+      },
+    });
 
-  const log = await prisma.growthRecord.create({
-    data: {
-      babyId: validated.babyId,
-      height: validated.height,
-      weight: validated.weight,
-      headCircumference: validated.headCircumference,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-      recordedBy: session.user.id,
-    },
+    revalidatePath("/");
+    // @ts-expect-error Next.js 16 type workaround
+    revalidateTag(`timeline-${parsedInput.babyId}`);
+    return log;
   });
-
-  revalidatePath("/");
-  return log;
-}

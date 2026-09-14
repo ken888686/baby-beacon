@@ -1,65 +1,104 @@
 "use server";
 
 import { BabyRole, DiaperType } from "@/app/generated/prisma/client";
-import { verifyBabyAccess } from "@/lib/auth-utils";
+import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
+import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logDiaperSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { z } from "zod";
 
-export async function logDiaper(data: {
-  babyId: string;
-  type: DiaperType;
-  color?: string;
-  texture?: string;
-  note?: string;
-  recordedAt?: Date;
-}) {
-  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
-  const validated = logDiaperSchema.parse(data);
-
-  const log = await prisma.diaperLog.create({
-    data: {
-      babyId: validated.babyId,
-      type: validated.type as DiaperType,
-      color: validated.color,
-      texture: validated.texture,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-      recordedBy: session.user.id,
-    },
-  });
-
-  revalidatePath("/");
-  return log;
-}
-
-export async function updateDiaper(
-  id: string,
-  data: {
-    type: DiaperType;
-    color?: string;
-    texture?: string;
-    note?: string;
-    recordedAt?: Date;
-  },
+function getDiaperDetails(
+  type: DiaperType,
+  color?: string | null,
+  texture?: string | null,
+  note?: string | null,
 ) {
-  const diaper = await prisma.diaperLog.findUnique({ where: { id } });
-  if (!diaper) throw new Error("Diaper record not found");
+  if (type === "WET" || type === "DRY") return note || "";
+  return [color, texture, note].filter(Boolean).join(", ");
+}
 
-  await verifyBabyAccess(diaper.babyId, BabyRole.ADMIN);
-  const validated = logDiaperSchema.parse({ ...data, babyId: diaper.babyId });
+export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
+  .schema(logDiaperSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const details = getDiaperDetails(
+      parsedInput.type as DiaperType,
+      parsedInput.color,
+      parsedInput.texture,
+      parsedInput.note,
+    );
 
-  const log = await prisma.diaperLog.update({
-    where: { id },
-    data: {
-      type: validated.type as DiaperType,
-      color: validated.color,
-      texture: validated.texture,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-    },
+    const log = await prisma.diaperLog.create({
+      data: {
+        babyId: parsedInput.babyId,
+        type: parsedInput.type as DiaperType,
+        color: parsedInput.color,
+        texture: parsedInput.texture,
+        note: parsedInput.note,
+        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedBy: ctx.session.user.id,
+        activityLog: {
+          create: {
+            babyId: parsedInput.babyId,
+            category: "DIAPER",
+            title: "Diaper Change",
+            details,
+            recordedAt: parsedInput.recordedAt || new Date(),
+          },
+        },
+      },
+    });
+
+    revalidatePath("/");
+    // @ts-expect-error Next.js 16 type workaround
+    revalidateTag(`timeline-${parsedInput.babyId}`);
+    return log;
   });
 
-  revalidatePath("/");
-  return log;
-}
+export const updateDiaper = authActionClient
+  .schema(
+    z.object({
+      id: z.string(),
+      data: logDiaperSchema.omit({ babyId: true }),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const { id, data } = parsedInput;
+    const diaper = await prisma.diaperLog.findUnique({ where: { id } });
+    if (!diaper) throw new Error("Diaper record not found");
+
+    await checkBabyPermission(
+      diaper.babyId,
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
+
+    const details = getDiaperDetails(
+      data.type as DiaperType,
+      data.color,
+      data.texture,
+      data.note,
+    );
+
+    const log = await prisma.diaperLog.update({
+      where: { id },
+      data: {
+        type: data.type as DiaperType,
+        color: data.color,
+        texture: data.texture,
+        note: data.note,
+        recordedAt: data.recordedAt || new Date(),
+        activityLog: {
+          update: {
+            details,
+            recordedAt: data.recordedAt || new Date(),
+          },
+        },
+      },
+    });
+
+    revalidatePath("/");
+    // @ts-expect-error Next.js 16 type workaround
+    revalidateTag(`timeline-${diaper.babyId}`);
+    return log;
+  });

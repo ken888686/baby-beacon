@@ -119,18 +119,21 @@ export function FeedForm({
 
     startTransition(async () => {
       try {
+        let result;
         if (initialData) {
-          await updateFeed(initialData.id, {
-            type: selectedType,
-            amount,
-            duration,
-            side,
-            note,
-            recordedAt: dateTime,
+          result = await updateFeed({
+            id: initialData.id,
+            data: {
+              type: selectedType,
+              amount,
+              duration,
+              side,
+              note,
+              recordedAt: dateTime,
+            },
           });
-          toast.success("Feed updated successfully");
         } else {
-          await logFeed({
+          result = await logFeed({
             babyId,
             type: selectedType,
             amount,
@@ -139,8 +142,20 @@ export function FeedForm({
             note,
             recordedAt: dateTime,
           });
-          toast.success("Feed logged successfully");
         }
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Invalid form inputs provided.");
+          return;
+        }
+
+        toast.success(
+          `Feed ${initialData ? "updated" : "logged"} successfully`,
+        );
         onSuccess?.();
       } catch (error) {
         toast.error("Failed to save feed: " + error);

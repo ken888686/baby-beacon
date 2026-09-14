@@ -1,7 +1,13 @@
 "use client";
 
 import { deleteTimelineRecord } from "@/app/actions/timeline";
-import { DiaperLog, FeedLog, GrowthRecord, HealthLog, SleepLog } from "@/app/generated/prisma/client";
+import {
+  DiaperLog,
+  FeedLog,
+  GrowthRecord,
+  HealthLog,
+  SleepLog,
+} from "@/app/generated/prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +44,7 @@ import {
   Thermometer,
   Trash2,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { TimelineItem } from "../actions/timeline";
 import { DiaperForm } from "./actions/DiaperDialog";
@@ -47,17 +53,19 @@ import { GrowthForm } from "./actions/GrowthDialog";
 import { HealthForm } from "./actions/HealthDialog";
 import { SleepForm } from "./actions/SleepDialog";
 
-type Category = "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
-
 interface RecordListProps {
   records: TimelineItem[];
 }
 
 export function RecordList({ records }: RecordListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
   const [editingRecord, setEditingRecord] = useState<TimelineItem | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const [optimisticRecords, removeOptimisticRecord] = useOptimistic(
+    records,
+    (state, idToRemove: string) => state.filter((r) => r.id !== idToRemove),
+  );
 
   const getIcon = (category: string) => {
     switch (category) {
@@ -94,14 +102,14 @@ export function RecordList({ records }: RecordListProps) {
   };
 
   const handleDelete = () => {
-    if (!deleteId || !deleteCategory) return;
+    if (!deleteId) return;
 
     startTransition(async () => {
       try {
-        await deleteTimelineRecord(deleteId, deleteCategory);
+        removeOptimisticRecord(deleteId); // Optimistically remove the item
+        await deleteTimelineRecord(deleteId);
         toast.success("Record deleted successfully");
         setDeleteId(null);
-        setDeleteCategory(null);
       } catch (error) {
         toast.error("Failed to delete record");
         console.error(error);
@@ -112,23 +120,25 @@ export function RecordList({ records }: RecordListProps) {
   return (
     <div className="space-y-3">
       <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
-      {records.length === 0 ? (
+      {optimisticRecords.length === 0 ? (
         <div className="py-10 text-center opacity-60">
           <p>No recent records</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {records.map((record) => {
+          {optimisticRecords.map((record) => {
             const Icon = getIcon(record.category);
             const colorClass = getIconColor(record.category);
 
             return (
               <Card
                 key={record.id}
-                className="group border-none shadow-soft-out animate-fade-in transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                className="group shadow-soft-out animate-fade-in rounded-2xl border-none transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
               >
                 <CardContent className="flex items-center gap-4 p-4 pr-2">
-                  <div className={`rounded-full p-2.5 shadow-soft-in ${colorClass}`}>
+                  <div
+                    className={`shadow-soft-in rounded-full p-2.5 ${colorClass}`}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
@@ -148,7 +158,9 @@ export function RecordList({ records }: RecordListProps) {
                         <MoreVertical className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingRecord(record)}>
+                        <DropdownMenuItem
+                          onClick={() => setEditingRecord(record)}
+                        >
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
@@ -156,7 +168,6 @@ export function RecordList({ records }: RecordListProps) {
                           className="text-destructive focus:text-destructive"
                           onClick={() => {
                             setDeleteId(record.id);
-                            setDeleteCategory(record.category);
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -254,8 +265,10 @@ export function RecordListLoader() {
   return (
     <div className="space-y-3">
       <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
-      <div className="space-y-4">
-        <Skeleton className="h-[200px] w-full rounded-2xl" />
+      <div className="space-y-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-[80px] w-full rounded-2xl" />
+        ))}
       </div>
     </div>
   );

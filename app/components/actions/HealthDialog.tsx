@@ -4,7 +4,6 @@ import { logHealth } from "@/app/actions/health";
 import { QuickAction } from "@/app/components/QuickAction";
 import { HealthLog } from "@/app/generated/prisma/client";
 import { HealthType } from "@/app/generated/prisma/enums";
-import { combineDateAndTime } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -15,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { combineDateAndTime } from "@/lib/utils";
 import { format } from "date-fns";
 import { ChevronDownIcon, Thermometer } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -76,7 +76,12 @@ interface HealthFormProps {
   initialData?: HealthLog;
 }
 
-export function HealthForm({ babyId, type, onSuccess, initialData }: HealthFormProps) {
+export function HealthForm({
+  babyId,
+  type,
+  onSuccess,
+  initialData,
+}: HealthFormProps) {
   const [date, setDate] = useState<Date | undefined>(
     initialData ? new Date(initialData.recordedAt) : new Date(),
   );
@@ -99,7 +104,7 @@ export function HealthForm({ babyId, type, onSuccess, initialData }: HealthFormP
     startTransition(async () => {
       try {
         // Note: updateHealth action needs to be implemented in actions/health.ts if needed
-        await logHealth({
+        const result = await logHealth({
           babyId,
           type: initialData?.type || type,
           value: valueStr ? parseFloat(valueStr) : undefined,
@@ -107,7 +112,19 @@ export function HealthForm({ babyId, type, onSuccess, initialData }: HealthFormP
           note,
           recordedAt: dateTime,
         });
-        toast.success(initialData ? "Health record updated" : "Health record saved");
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Invalid form inputs provided.");
+          return;
+        }
+
+        toast.success(
+          initialData ? "Health record updated" : "Health record saved",
+        );
         onSuccess?.();
       } catch (error) {
         toast.error("Failed to save record: " + error);
@@ -192,11 +209,11 @@ export function HealthForm({ babyId, type, onSuccess, initialData }: HealthFormP
       {type === HealthType.MEDICINE && (
         <Field>
           <FieldLabel>Dosage (optional)</FieldLabel>
-          <Input 
-            name="value" 
-            type="number" 
-            step="0.1" 
-            placeholder="2.5" 
+          <Input
+            name="value"
+            type="number"
+            step="0.1"
+            placeholder="2.5"
             defaultValue={initialData?.value || ""}
           />
         </Field>
@@ -204,15 +221,19 @@ export function HealthForm({ babyId, type, onSuccess, initialData }: HealthFormP
 
       <Field>
         <FieldLabel>Note</FieldLabel>
-        <Input 
-          name="note" 
-          placeholder="Optional notes" 
+        <Input
+          name="note"
+          placeholder="Optional notes"
           defaultValue={initialData?.note || ""}
         />
       </Field>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Saving..." : initialData ? "Update Record" : "Save Record"}
+        {isPending
+          ? "Saving..."
+          : initialData
+            ? "Update Record"
+            : "Save Record"}
       </Button>
     </form>
   );
