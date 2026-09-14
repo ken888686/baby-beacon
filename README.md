@@ -1,11 +1,11 @@
 # 👶 Baby Beacon
 
-**Baby Beacon** is a smart baby monitoring and health tracking assistant designed for tired parents. It
-provides a soft, intuitive interface to track daily activities, growth metrics, and health records for multiple babies.
+**Baby Beacon** is a mobile-first baby care and health tracking assistant designed for tired parents. It
+provides a calm, accessible interface for tracking daily activities, growth metrics, and health records across multiple babies.
 
 ## ✨ Features
 
-- **Soft UI Design**: A gentle, pastel-colored interface optimized for night-time use and sleep-deprived eyes.
+- **Organic Biophilic UI**: A calm green visual system with accessible contrast, touch-friendly controls, and reduced-motion support.
 - **Secure Authentication**: Built-in Google social login powered by Better Auth.
 - **Multi-Baby Management**: Easily switch between different babies using the built-in Baby Switcher.
 - **Unified Activity Timeline**: A consolidated view of all baby activities, sorted by time with intuitive category icons.
@@ -19,14 +19,15 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **UI Runtime**: [React 19](https://react.dev/) with Server Actions
 - **Authentication**: [Better Auth](https://better-auth.com/)
-- **Database**: [Prisma](https://www.prisma.io/) with PostgreSQL (Custom client output)
+- **Database**: [Prisma 7](https://www.prisma.io/) with PostgreSQL (custom client output)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Testing**: Node.js test runner with TypeScript support via [tsx](https://tsx.is/)
-- **Runtime**: [Bun](https://bun.sh/)
+- **Runtime**: [Bun](https://bun.sh/), with [TypeScript](https://www.typescriptlang.org/)
 
 ## 🚀 Getting Started
 
@@ -40,7 +41,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/AaronTu/baby-beacon.git
+   git clone https://github.com/ken888686/baby-beacon.git
    cd baby-beacon
    ```
 
@@ -59,6 +60,7 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
    BETTER_AUTH_SECRET="your-auth-secret"
    BETTER_AUTH_URL="http://localhost:3000"
+   NEXT_PUBLIC_BASE_URL="http://localhost:3000"
    ```
 
 4. **Initialize Database & Seed Data:**
@@ -75,10 +77,13 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
 
    ```bash
    bun prisma migrate resolve --applied 20260914160000_init
+   bun prisma migrate deploy
    bun run db:backfill-activity
    ```
 
-   The backfill is idempotent and only creates missing `ActivityLog` records.
+   Only mark the baseline as applied when the existing database already matches
+   the current Prisma schema. The backfill is idempotent and only creates missing
+   `ActivityLog` records.
 
 5. **Run the Development Server:**
 
@@ -102,13 +107,13 @@ which are shared by all record Actions and the database backfill command.
 - `app/`: Next.js App Router.
   - `actions/`: Server Actions (Business logic & DB interactions).
   - `components/`: UI components.
-- `__tests__/`: Comprehensive test suite.
-  - `actions/`: Unit tests for Server Actions.
-  - `components/`: Component & Integration tests.
+- `tests/unit/`: Pure unit tests for shared domain helpers.
 - `components/ui/`: Reusable shadcn/ui components.
 - `prisma/`:
   - `schema.prisma`: Multi-model schema for baby tracking.
+  - `migrations/`: Versioned PostgreSQL schema and data constraints.
   - `seed.ts`: Mock data for development.
+- `scripts/`: Operational data migration scripts.
 - `lib/`: Prisma client instance and utility functions.
 - `public/`: Static assets.
 
