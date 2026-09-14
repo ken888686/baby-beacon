@@ -6,7 +6,8 @@
     "dev": "eslint && prisma generate && next dev",
     "build": "eslint && prisma generate && next build",
     "start": "eslint && prisma generate && next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:backfill-activity": "tsx scripts/backfill-activity-logs.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

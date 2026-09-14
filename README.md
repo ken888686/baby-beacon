@@ -69,6 +69,17 @@ provides a soft, intuitive interface to track daily activities, growth metrics, 
    bun prisma db seed
    ```
 
+   If the database was created before migrations were added and already matches
+   the current schema, mark the baseline as applied before running the data
+   backfill:
+
+   ```bash
+   bun prisma migrate resolve --applied 20260914160000_init
+   bun run db:backfill-activity
+   ```
+
+   The backfill is idempotent and only creates missing `ActivityLog` records.
+
 5. **Run the Development Server:**
 
    ```bash
