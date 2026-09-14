@@ -4,7 +4,7 @@ import { BabyRole, DiaperType } from "@/app/generated/prisma/client";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { logDiaperSchema } from "@/lib/schemas";
+import { logDiaperSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -56,7 +56,7 @@ export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
 export const updateDiaper = authActionClient
   .schema(
     z.object({
-      id: z.string(),
+      id: uuidSchema,
       data: logDiaperSchema.omit({ babyId: true }),
     }),
   )

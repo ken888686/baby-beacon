@@ -5,6 +5,7 @@ import { checkBabyPermission, withBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { mapLegacyTimelineItem, type TimelineItem } from "@/lib/timeline";
 import { authActionClient } from "@/lib/safe-action";
+import { uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -90,7 +91,7 @@ export const getTimeline = withBabyAccess(
 export const deleteTimelineRecord = authActionClient
   .schema(
     z.object({
-      id: z.uuid(),
+      id: uuidSchema,
       legacyCategory: z
         .enum(["SLEEP", "FEED", "DIAPER", "HEALTH", "GROWTH"])
         .optional(),

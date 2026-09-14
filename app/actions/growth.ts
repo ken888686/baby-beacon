@@ -4,7 +4,7 @@ import { BabyRole } from "@/app/generated/prisma/client";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { logGrowthSchema } from "@/lib/schemas";
+import { logGrowthSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -49,15 +49,21 @@ export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
 export const updateGrowth = authActionClient
   .schema(
     z.object({
-      id: z.string(),
+      id: uuidSchema,
       data: logGrowthSchema.omit({ babyId: true }),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const growth = await prisma.growthRecord.findUnique({ where: { id: parsedInput.id } });
+    const growth = await prisma.growthRecord.findUnique({
+      where: { id: parsedInput.id },
+    });
     if (!growth) throw new Error("Growth record not found");
 
-    await checkBabyPermission(growth.babyId, ctx.session.user.id, BabyRole.ADMIN);
+    await checkBabyPermission(
+      growth.babyId,
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
 
     const input = { ...parsedInput.data, babyId: growth.babyId };
     const recordedAt = parsedInput.data.recordedAt || new Date();

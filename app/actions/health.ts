@@ -4,7 +4,7 @@ import { BabyRole, HealthType } from "@/app/generated/prisma/client";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { logHealthSchema } from "@/lib/schemas";
+import { logHealthSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -66,15 +66,21 @@ export const logHealth = getBabyActionClient(BabyRole.ADMIN)
 export const updateHealth = authActionClient
   .schema(
     z.object({
-      id: z.string(),
+      id: uuidSchema,
       data: logHealthSchema.omit({ babyId: true }),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    const health = await prisma.healthLog.findUnique({ where: { id: parsedInput.id } });
+    const health = await prisma.healthLog.findUnique({
+      where: { id: parsedInput.id },
+    });
     if (!health) throw new Error("Health record not found");
 
-    await checkBabyPermission(health.babyId, ctx.session.user.id, BabyRole.ADMIN);
+    await checkBabyPermission(
+      health.babyId,
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
 
     const input = { ...parsedInput.data, babyId: health.babyId };
     const { title, details } = getHealthSummary(input);
@@ -87,7 +93,13 @@ export const updateHealth = authActionClient
         recordedAt,
         activityLog: {
           upsert: {
-            create: { babyId: health.babyId, category: "HEALTH", title, details, recordedAt },
+            create: {
+              babyId: health.babyId,
+              category: "HEALTH",
+              title,
+              details,
+              recordedAt,
+            },
             update: { title, details, recordedAt },
           },
         },

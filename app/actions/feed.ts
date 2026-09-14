@@ -4,7 +4,7 @@ import { BabyRole, FeedType, Side } from "@/app/generated/prisma/client";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { logFeedSchema } from "@/lib/schemas";
+import { logFeedSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -80,7 +80,7 @@ export const logFeed = getBabyActionClient(BabyRole.ADMIN)
 export const updateFeed = authActionClient
   .schema(
     z.object({
-      id: z.string(),
+      id: uuidSchema,
       data: logFeedSchema.omit({ babyId: true }),
     }),
   )

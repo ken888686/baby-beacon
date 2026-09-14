@@ -4,7 +4,7 @@ import { BabyRole } from "@/app/generated/prisma/client";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { logSleepSchema } from "@/lib/schemas";
+import { logSleepSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -20,7 +20,7 @@ function getSleepDetails(
 }
 
 export const startSleep = getBabyActionClient(BabyRole.ADMIN)
-  .schema(z.object({ babyId: z.string() }))
+  .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput, ctx }) => {
     const { babyId } = parsedInput;
 
@@ -57,7 +57,7 @@ export const startSleep = getBabyActionClient(BabyRole.ADMIN)
   });
 
 export const endSleep = getBabyActionClient(BabyRole.ADMIN)
-  .schema(z.object({ babyId: z.string() }))
+  .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput }) => {
     const { babyId } = parsedInput;
 
@@ -132,7 +132,7 @@ export const logSleep = getBabyActionClient(BabyRole.ADMIN)
 export const updateSleep = authActionClient
   .schema(
     z.object({
-      id: z.string(),
+      id: uuidSchema,
       data: logSleepSchema.omit({ babyId: true }),
     }),
   )

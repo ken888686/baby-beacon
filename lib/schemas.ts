@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const uuidSchema = z.uuid();
+
 // Enums
 export const GenderEnum = z.enum(["MALE", "FEMALE"]);
 export const FeedTypeEnum = z.enum([
@@ -35,7 +37,7 @@ export const updateBabySchema = z.object({
 
 // Sleep Schemas
 export const logSleepSchema = z.object({
-  babyId: z.uuid(),
+  babyId: uuidSchema,
   startTime: z.date(),
   endTime: z.date().optional(),
   quality: z.string().optional(),
@@ -43,7 +45,7 @@ export const logSleepSchema = z.object({
 
 // Feed Schemas
 export const logFeedSchema = z.object({
-  babyId: z.uuid(),
+  babyId: uuidSchema,
   type: FeedTypeEnum,
   amount: z.number().positive().optional(),
   duration: z.number().positive().optional(),
@@ -54,7 +56,7 @@ export const logFeedSchema = z.object({
 
 // Diaper Schemas
 export const logDiaperSchema = z.object({
-  babyId: z.uuid(),
+  babyId: uuidSchema,
   type: DiaperTypeEnum,
   color: z.string().nullable().optional(),
   texture: z.string().nullable().optional(),
@@ -64,7 +66,7 @@ export const logDiaperSchema = z.object({
 
 // Health Schemas
 export const logHealthSchema = z.object({
-  babyId: z.uuid(),
+  babyId: uuidSchema,
   type: HealthTypeEnum,
   value: z.number().optional(),
   description: z.string().optional(),
@@ -75,7 +77,7 @@ export const logHealthSchema = z.object({
 
 // Growth Schemas
 export const logGrowthSchema = z.object({
-  babyId: z.uuid(),
+  babyId: uuidSchema,
   height: z.number().positive().optional(),
   weight: z.number().positive().optional(),
   headCircumference: z.number().positive().optional(),

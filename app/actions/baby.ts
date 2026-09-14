@@ -4,7 +4,7 @@ import { BabyRole } from "@/app/generated/prisma/client";
 import { getSessionOrThrow, withBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
-import { createBabySchema, updateBabySchema } from "@/lib/schemas";
+import { createBabySchema, updateBabySchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -49,7 +49,7 @@ export const getBaby = withBabyAccess(async (id: string) => {
 });
 
 export const switchBaby = getBabyActionClient(BabyRole.VIEWER)
-  .schema(z.object({ babyId: z.uuid() }))
+  .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput }) => {
     (await cookies()).set("selectedBabyId", parsedInput.babyId);
     revalidatePath("/");
@@ -73,7 +73,7 @@ export const getBabyStats = withBabyAccess(async (babyId: string) => {
 export const updateBaby = getBabyActionClient(BabyRole.ADMIN)
   .schema(
     z.object({
-      babyId: z.uuid(),
+      babyId: uuidSchema,
       data: updateBabySchema,
     }),
   )
@@ -88,7 +88,7 @@ export const updateBaby = getBabyActionClient(BabyRole.ADMIN)
   });
 
 export const deleteBaby = getBabyActionClient(BabyRole.OWNER)
-  .schema(z.object({ babyId: z.uuid() }))
+  .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput }) => {
     await prisma.baby.delete({
       where: { id: parsedInput.babyId },
