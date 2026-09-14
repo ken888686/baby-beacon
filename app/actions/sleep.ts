@@ -13,6 +13,15 @@ import { logSleepSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
+
 export const startSleep = getBabyActionClient(BabyRole.ADMIN)
   .schema(z.object({ babyId: uuidSchema }))
   .action(async ({ parsedInput, ctx }) => {
@@ -30,21 +39,29 @@ export const startSleep = getBabyActionClient(BabyRole.ADMIN)
     }
 
     const startTime = new Date();
-    const sleep = await prisma.sleepLog.create({
-      data: {
-        babyId,
-        startTime,
-        recordedBy: ctx.session.user.id,
-        activityLog: {
-          create: buildActivityLogData({
-            babyId,
-            category: "SLEEP",
-            recordedAt: startTime,
-            summary: getSleepSummary(startTime),
-          }),
+    let sleep: Awaited<ReturnType<typeof prisma.sleepLog.create>>;
+    try {
+      sleep = await prisma.sleepLog.create({
+        data: {
+          babyId,
+          startTime,
+          recordedBy: ctx.session.user.id,
+          activityLog: {
+            create: buildActivityLogData({
+              babyId,
+              category: "SLEEP",
+              recordedAt: startTime,
+              summary: getSleepSummary(startTime),
+            }),
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("Baby is already sleeping");
+      }
+      throw error;
+    }
 
     revalidatePath("/");
     return sleep;
