@@ -107,10 +107,20 @@ export function RecordList({ records }: RecordListProps) {
     startTransition(async () => {
       try {
         removeOptimisticRecord(deleteId); // Optimistically remove the item
-        await deleteTimelineRecord(
-          deleteId,
-          optimisticRecords.find((record) => record.id === deleteId)?.category,
-        );
+        const result = await deleteTimelineRecord({
+          id: deleteId,
+          legacyCategory: optimisticRecords.find(
+            (record) => record.id === deleteId,
+          )?.category,
+        });
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Unable to delete this record.");
+          return;
+        }
         toast.success("Record deleted successfully");
         setDeleteId(null);
       } catch (error) {
