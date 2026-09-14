@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
-import { use, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { switchBaby } from "../actions/baby";
 import type { Baby, Gender } from "../generated/prisma/client";
 import { AddBabyDialog } from "./AddBabyDialog";
@@ -23,12 +23,11 @@ export function BabySwitcher({
   babies,
   currentBabyId,
 }: {
-  babies: Promise<Baby[]>;
+  babies: Baby[];
   currentBabyId?: string;
 }) {
-  const allBabies = use(babies);
-  const selectedBaby = allBabies.find((b) => b.id === currentBabyId) ??
-    allBabies[0] ?? {
+  const selectedBaby = babies.find((b) => b.id === currentBabyId) ??
+    babies[0] ?? {
       id: "placeholder",
       name: "Add a Baby",
       birthDate: new Date(),
@@ -87,7 +86,7 @@ export function BabySwitcher({
             Switch Baby
           </DropdownMenuLabel>
           <DropdownMenuGroup>
-            {allBabies.map((baby) => (
+            {babies.map((baby) => (
               <DropdownMenuItem
                 key={baby.id}
                 className="focus:bg-secondary/30 focus:text-foreground hover:bg-secondary/30 flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 transition-colors"

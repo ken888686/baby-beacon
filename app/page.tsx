@@ -1,8 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth";
-import { Baby, Milk, Moon, Ruler, Thermometer } from "lucide-react";
+import { Baby as BabyIcon, Milk, Moon, Ruler, Thermometer } from "lucide-react";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
+import type { Baby as BabyModel } from "./generated/prisma/client";
 import { getBabies, getBabyStats } from "./actions/baby";
 import { getTimeline } from "./actions/timeline";
 import { DiaperDialog } from "./components/actions/DiaperDialog";
@@ -33,12 +34,13 @@ async function RecentActivity({ babyId }: { babyId: string }) {
   return <RecordList records={recentRecords} />;
 }
 
-import { FeedLog, SleepLog } from "./generated/prisma/client";
+import type { FeedLog, SleepLog } from "./generated/prisma/client";
 
 // 4. Main Page
 export default async function Home() {
   let currentBabyId: string | undefined;
   let currentBabyName: string | undefined;
+  let babies: BabyModel[] = [];
   let stats: { lastSleep: SleepLog | null; lastFeed: FeedLog | null } = {
     lastSleep: null,
     lastFeed: null,
@@ -49,7 +51,7 @@ export default async function Home() {
   });
 
   if (session) {
-    const babies = await getBabies(session.user.id);
+    babies = await getBabies(session.user.id);
     if (babies.length > 0) {
       const cookieStore = await cookies();
       const selectedId = cookieStore.get("selectedBabyId")?.value;
@@ -66,7 +68,7 @@ export default async function Home() {
     <main className="bg-background min-h-dvh">
       <div className="mx-auto max-w-xl space-y-10 px-4 py-4 pb-12 sm:px-6">
         {/* Header (Instant Load) */}
-        <Header currentBabyId={currentBabyId} />
+        <Header babies={babies} currentBabyId={currentBabyId} />
 
         <section
           aria-labelledby="dashboard-heading"
@@ -142,7 +144,7 @@ export default async function Home() {
             {currentBabyId ? (
               <DiaperDialog babyId={currentBabyId} />
             ) : (
-              <QuickAction label="Diaper" icon={Baby} />
+              <QuickAction label="Diaper" icon={BabyIcon} />
             )}
             {currentBabyId ? (
               <HealthDialog babyId={currentBabyId} />
