@@ -35,17 +35,17 @@ export function QuickAction({
       variant="outline"
       onClick={!children ? onClick : undefined}
       aria-label={label}
-      className="group border-secondary/50 hover:border-primary/50 hover:bg-secondary/20 flex h-28 flex-col items-center justify-center rounded-2xl p-4 shadow-soft-out transition-all duration-200 active:scale-95 cursor-pointer"
+      className="group border-border bg-card shadow-soft-out hover:border-primary/40 hover:bg-secondary/30 flex h-28 cursor-pointer flex-col items-start justify-between rounded-3xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
     >
-      <div className="relative mb-2">
-        <div className="bg-secondary/30 group-hover:bg-secondary/50 text-foreground rounded-2xl p-3 transition-colors">
-          <Icon className="h-6 w-6" />
+      <div className="relative">
+        <div className="bg-secondary text-primary group-hover:bg-primary group-hover:text-primary-foreground rounded-2xl p-2.5 transition-colors">
+          <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
-        <div className="bg-primary text-primary-foreground absolute -right-1 -bottom-1 rounded-full border-2 border-white p-0.5">
-          <Plus className="h-3 w-3" />
+        <div className="bg-card text-primary border-border absolute -right-2 -bottom-2 rounded-full border p-0.5">
+          <Plus className="h-3 w-3" aria-hidden="true" />
         </div>
       </div>
-      <span className="text-xs font-semibold">{label}</span>
+      <span className="text-foreground text-sm font-bold">{label}</span>
     </Button>
   );
 
@@ -70,5 +70,5 @@ export function QuickAction({
 }
 
 export function QuickActionLoader() {
-  return <Skeleton className="h-28 rounded-2xl p-4" />;
+  return <Skeleton className="h-28 rounded-3xl p-4" />;
 }

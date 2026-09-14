@@ -1,69 +1,106 @@
 "use server";
 
 import { BabyRole, FeedType, Side } from "@/app/generated/prisma/client";
-import { verifyBabyAccess } from "@/lib/auth-utils";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getFeedSummary,
+} from "@/lib/activity-log";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { logFeedSchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
+import { logFeedSchema, uuidSchema } from "@/lib/schemas";
+import { revalidateDashboard } from "@/lib/revalidation";
+import { z } from "zod";
 
-export async function logFeed(data: {
-  babyId: string;
-  type: FeedType;
-  amount?: number;
-  duration?: number;
-  side?: Side;
-  note?: string;
-  recordedAt?: Date;
-}) {
-  const session = await verifyBabyAccess(data.babyId, BabyRole.ADMIN);
-  const validated = logFeedSchema.parse(data);
+export const logFeed = getBabyActionClient(BabyRole.ADMIN)
+  .schema(logFeedSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const recordedAt = parsedInput.recordedAt || new Date();
+    const summary = getFeedSummary(
+      parsedInput.type as FeedType,
+      parsedInput.amount,
+      parsedInput.duration,
+      parsedInput.side as Side | undefined,
+      parsedInput.note,
+    );
 
-  const log = await prisma.feedLog.create({
-    data: {
-      babyId: validated.babyId,
-      type: validated.type as FeedType,
-      amount: validated.amount,
-      duration: validated.duration,
-      side: validated.side as Side,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-      recordedBy: session.user.id,
-    },
+    const log = await prisma.feedLog.create({
+      data: {
+        babyId: parsedInput.babyId,
+        type: parsedInput.type as FeedType,
+        amount: parsedInput.amount,
+        duration: parsedInput.duration,
+        side: parsedInput.side as Side,
+        note: parsedInput.note,
+        recordedAt,
+        recordedBy: ctx.session.user.id,
+        activityLog: {
+          create: buildActivityLogData({
+            babyId: parsedInput.babyId,
+            category: "FEED",
+            recordedAt,
+            summary,
+          }),
+        },
+      },
+    });
+
+    revalidateDashboard();
+    return log;
   });
 
-  revalidatePath("/");
-  return log;
-}
+export const updateFeed = authActionClient
+  .schema(
+    z.object({
+      id: uuidSchema,
+      data: logFeedSchema.omit({ babyId: true }),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const { id, data } = parsedInput;
+    const feed = await requireBabyRecordPermission(
+      await prisma.feedLog.findUnique({ where: { id } }),
+      "Feed",
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
 
-export async function updateFeed(
-  id: string,
-  data: {
-    type: FeedType;
-    amount?: number;
-    duration?: number;
-    side?: Side;
-    note?: string;
-    recordedAt?: Date;
-  },
-) {
-  const feed = await prisma.feedLog.findUnique({ where: { id } });
-  if (!feed) throw new Error("Feed record not found");
+    const recordedAt = data.recordedAt || new Date();
+    const summary = getFeedSummary(
+      data.type as FeedType,
+      data.amount,
+      data.duration,
+      data.side as Side | undefined,
+      data.note,
+    );
 
-  await verifyBabyAccess(feed.babyId, BabyRole.ADMIN);
-  const validated = logFeedSchema.parse({ ...data, babyId: feed.babyId });
+    const log = await prisma.feedLog.update({
+      where: { id },
+      data: {
+        type: data.type as FeedType,
+        amount: data.amount,
+        duration: data.duration,
+        side: data.side as Side,
+        note: data.note,
+        recordedAt,
+        activityLog: {
+          upsert: {
+            create: buildActivityLogData({
+              babyId: feed.babyId,
+              category: "FEED",
+              recordedAt,
+              summary,
+            }),
+            update: buildActivityLogUpdate({
+              recordedAt,
+              summary,
+            }),
+          },
+        },
+      },
+    });
 
-  const log = await prisma.feedLog.update({
-    where: { id },
-    data: {
-      type: validated.type as FeedType,
-      amount: validated.amount,
-      duration: validated.duration,
-      side: validated.side as Side,
-      note: validated.note,
-      recordedAt: validated.recordedAt || new Date(),
-    },
+    revalidateDashboard();
+    return log;
   });
-
-  revalidatePath("/");
-  return log;
-}

@@ -43,13 +43,19 @@ export function SleepDialog({ babyId, lastSleep }: SleepDialogProps) {
   const handleToggleSleep = () => {
     startTransition(async () => {
       try {
+        let result;
         if (isSleeping) {
-          await endSleep(babyId);
-          toast.success("Sleep ended");
+          result = await endSleep({ babyId });
         } else {
-          await startSleep(babyId);
-          toast.success("Sleep started");
+          result = await startSleep({ babyId });
         }
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+
+        toast.success(`Sleep ${isSleeping ? "ended" : "started"}`);
         setOpen(false);
       } catch (error) {
         toast.error("Failed to update sleep status: " + error);
@@ -141,21 +147,35 @@ export function SleepForm({ babyId, onSuccess, initialData }: SleepFormProps) {
 
     startTransition(async () => {
       try {
+        let result;
         if (initialData) {
-          await updateSleep(babyId, initialData.id, {
-            startTime: startDateTime,
-            endTime: endDateTime,
-            quality: note,
+          result = await updateSleep({
+            id: initialData.id,
+            data: {
+              startTime: startDateTime,
+              endTime: endDateTime,
+              quality: note,
+            },
           });
-          toast.success("Sleep record updated");
         } else {
-          await logSleep(babyId, {
+          result = await logSleep({
+            babyId,
             startTime: startDateTime,
             endTime: endDateTime,
             quality: note,
           });
-          toast.success("Sleep logged manually");
         }
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Invalid form inputs provided.");
+          return;
+        }
+
+        toast.success(`Sleep record ${initialData ? "updated" : "logged"}`);
         onSuccess?.();
       } catch (error) {
         toast.error("Failed to save sleep: " + error);

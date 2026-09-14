@@ -21,23 +21,27 @@ export function StatusCard({
   return (
     <Card
       className={cn(
-        "h-56 border-none shadow-soft-out transition-all active:scale-[0.98] rounded-2xl",
+        "bg-card shadow-soft-out min-h-40 rounded-3xl border border-white/80 transition-transform duration-200 active:scale-[0.98]",
         className,
       )}
     >
-      <CardContent className="p-5">
-        <div className="mb-3 flex items-start justify-between">
-          <span className="text-[10px] font-bold tracking-[0.1em] uppercase opacity-50">
+      <CardContent className="flex h-full flex-col p-5">
+        <div className="flex items-start justify-between">
+          <span className="text-muted-foreground text-xs font-bold tracking-[0.08em] uppercase">
             {title}
           </span>
-          <div className="rounded-xl bg-white/40 p-2 shadow-soft-in">
-            <Icon className="h-5 w-5" />
+          <div className="bg-primary/10 text-primary rounded-2xl p-2.5">
+            <Icon className="h-5 w-5" aria-hidden="true" />
           </div>
         </div>
-        <div className="flex flex-col justify-end h-28">
-          <h3 className="text-2xl leading-tight font-bold tracking-tight">{value}</h3>
+        <div className="mt-auto">
+          <h3 className="text-foreground text-2xl leading-tight font-bold tracking-tight tabular-nums">
+            {value}
+          </h3>
           {subValue && (
-            <p className="mt-1 text-xs font-medium opacity-60 leading-relaxed">{subValue}</p>
+            <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+              {subValue}
+            </p>
           )}
         </div>
       </CardContent>
@@ -50,7 +54,7 @@ export function StatusCardLoader() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         {[...Array(2)].map((_, i) => (
-          <Skeleton key={i} className="h-56 rounded-2xl" />
+          <Skeleton key={i} className="h-40 rounded-3xl" />
         ))}
       </div>
     </div>

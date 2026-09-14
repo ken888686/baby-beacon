@@ -1,116 +1,201 @@
 "use server";
 
 import { BabyRole } from "@/app/generated/prisma/client";
-import { getSessionOrThrow, withBabyAccess } from "@/lib/auth-utils";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getSleepSummary,
+} from "@/lib/activity-log";
+import { requireBabyRecordPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
+import { logSleepSchema, uuidSchema } from "@/lib/schemas";
+import { revalidateDashboard } from "@/lib/revalidation";
+import { z } from "zod";
 
-export const startSleep = withBabyAccess(async (babyId: string) => {
-  const session = await getSessionOrThrow();
-  // Check if there is already an active sleep session
-  const activeSleep = await prisma.sleepLog.findFirst({
-    where: {
-      babyId,
-      endTime: null,
-    },
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
+
+export const startSleep = getBabyActionClient(BabyRole.ADMIN)
+  .schema(z.object({ babyId: uuidSchema }))
+  .action(async ({ parsedInput, ctx }) => {
+    const { babyId } = parsedInput;
+
+    const activeSleep = await prisma.sleepLog.findFirst({
+      where: {
+        babyId,
+        endTime: null,
+      },
+    });
+
+    if (activeSleep) {
+      throw new Error("Baby is already sleeping");
+    }
+
+    const startTime = new Date();
+    let sleep: Awaited<ReturnType<typeof prisma.sleepLog.create>>;
+    try {
+      sleep = await prisma.sleepLog.create({
+        data: {
+          babyId,
+          startTime,
+          recordedBy: ctx.session.user.id,
+          activityLog: {
+            create: buildActivityLogData({
+              babyId,
+              category: "SLEEP",
+              recordedAt: startTime,
+              summary: getSleepSummary(startTime),
+            }),
+          },
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("Baby is already sleeping");
+      }
+      throw error;
+    }
+
+    revalidateDashboard();
+    return sleep;
   });
 
-  if (activeSleep) {
-    throw new Error("Baby is already sleeping");
-  }
+export const endSleep = getBabyActionClient(BabyRole.ADMIN)
+  .schema(z.object({ babyId: uuidSchema }))
+  .action(async ({ parsedInput }) => {
+    const { babyId } = parsedInput;
 
-  const sleep = await prisma.sleepLog.create({
-    data: {
-      babyId,
-      startTime: new Date(),
-      recordedBy: session.user.id,
-    },
+    const activeSleep = await prisma.sleepLog.findFirst({
+      where: {
+        babyId,
+        endTime: null,
+      },
+      orderBy: { startTime: "desc" },
+    });
+
+    if (!activeSleep) {
+      throw new Error("Baby is not currently sleeping");
+    }
+
+    const endTime = new Date();
+    const sleep = await prisma.sleepLog.update({
+      where: { id: activeSleep.id },
+      data: {
+        endTime,
+        activityLog: {
+          update: buildActivityLogUpdate({
+            summary: getSleepSummary(
+              activeSleep.startTime,
+              endTime,
+              activeSleep.quality,
+            ),
+            recordedAt: activeSleep.startTime,
+          }),
+        },
+      },
+    });
+
+    revalidateDashboard();
+    return sleep;
   });
 
-  revalidatePath("/");
-  return sleep;
-}, BabyRole.ADMIN);
-
-export const endSleep = withBabyAccess(async (babyId: string) => {
-  const activeSleep = await prisma.sleepLog.findFirst({
-    where: {
-      babyId,
-      endTime: null,
-    },
-    orderBy: { startTime: "desc" },
-  });
-
-  if (!activeSleep) {
-    throw new Error("Baby is not currently sleeping");
-  }
-
-  const sleep = await prisma.sleepLog.update({
-    where: { id: activeSleep.id },
-    data: {
-      endTime: new Date(),
-    },
-  });
-
-  revalidatePath("/");
-  return sleep;
-}, BabyRole.ADMIN);
-
-export const logSleep = withBabyAccess(
-  async (
-    babyId: string,
-    data: {
-      startTime: Date;
-      endTime?: Date;
-      quality?: string;
-      note?: string;
-    },
-  ) => {
-    // Basic validation
-    if (data.endTime && data.startTime > data.endTime) {
+export const logSleep = getBabyActionClient(BabyRole.ADMIN)
+  .schema(logSleepSchema)
+  .action(async ({ parsedInput }) => {
+    if (parsedInput.endTime && parsedInput.startTime > parsedInput.endTime) {
       throw new Error("Start time must be before end time");
     }
+
+    const summary = getSleepSummary(
+      parsedInput.startTime,
+      parsedInput.endTime,
+      parsedInput.quality,
+    );
 
     const sleep = await prisma.sleepLog.create({
       data: {
-        babyId,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        quality: data.quality,
+        babyId: parsedInput.babyId,
+        startTime: parsedInput.startTime,
+        endTime: parsedInput.endTime,
+        quality: parsedInput.quality,
+        activityLog: {
+          create: buildActivityLogData({
+            babyId: parsedInput.babyId,
+            category: "SLEEP",
+            recordedAt: parsedInput.startTime,
+            summary,
+          }),
+        },
       },
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
-  },
-  BabyRole.ADMIN,
-);
+  });
 
-export const updateSleep = withBabyAccess(
-  async (
-    babyId: string,
-    id: string,
-    data: {
-      startTime: Date;
-      endTime?: Date;
-      quality?: string;
-      note?: string;
-    },
-  ) => {
+export const updateSleep = authActionClient
+  .schema(
+    z.object({
+      id: uuidSchema,
+      data: logSleepSchema.omit({ babyId: true }),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const { id, data } = parsedInput;
+
     if (data.endTime && data.startTime > data.endTime) {
       throw new Error("Start time must be before end time");
     }
 
-    const sleep = await prisma.sleepLog.update({
+    const sleepLog = await prisma.sleepLog.findUnique({
       where: { id },
-      data: {
-        startTime: data.startTime,
-        endTime: data.endTime,
-        quality: data.quality,
-      },
+      include: { activityLog: true },
+    });
+    const permittedSleepLog = await requireBabyRecordPermission(
+      sleepLog,
+      "Sleep",
+      ctx.session.user.id,
+      BabyRole.ADMIN,
+    );
+
+    const summary = getSleepSummary(data.startTime, data.endTime, data.quality);
+
+    const updateData: Parameters<typeof prisma.sleepLog.update>[0]["data"] = {
+      startTime: data.startTime,
+      endTime: data.endTime,
+      quality: data.quality,
+    };
+
+    if (permittedSleepLog.activityLog) {
+      updateData.activityLog = {
+        update: buildActivityLogUpdate({
+          summary,
+          recordedAt: data.startTime,
+        }),
+      };
+    } else {
+      updateData.activityLog = {
+        create: buildActivityLogData({
+          babyId: permittedSleepLog.babyId,
+          category: "SLEEP",
+          recordedAt: data.startTime,
+          summary,
+        }),
+      };
+    }
+
+    const sleep = await prisma.sleepLog.update({
+      where: { id: permittedSleepLog.id },
+      data: updateData,
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return sleep;
-  },
-  BabyRole.ADMIN,
-);
+  });
