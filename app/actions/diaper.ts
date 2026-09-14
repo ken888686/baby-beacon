@@ -1,6 +1,11 @@
 "use server";
 
 import { BabyRole, DiaperType } from "@/app/generated/prisma/client";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getDiaperSummary,
+} from "@/lib/activity-log";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
@@ -8,20 +13,11 @@ import { logDiaperSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-function getDiaperDetails(
-  type: DiaperType,
-  color?: string | null,
-  texture?: string | null,
-  note?: string | null,
-) {
-  if (type === "WET" || type === "DRY") return note || "";
-  return [color, texture, note].filter(Boolean).join(", ");
-}
-
 export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
   .schema(logDiaperSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const details = getDiaperDetails(
+    const recordedAt = parsedInput.recordedAt || new Date();
+    const summary = getDiaperSummary(
       parsedInput.type as DiaperType,
       parsedInput.color,
       parsedInput.texture,
@@ -35,16 +31,15 @@ export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
         color: parsedInput.color,
         texture: parsedInput.texture,
         note: parsedInput.note,
-        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedAt,
         recordedBy: ctx.session.user.id,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId: parsedInput.babyId,
             category: "DIAPER",
-            title: "Diaper Change",
-            details,
-            recordedAt: parsedInput.recordedAt || new Date(),
-          },
+            recordedAt,
+            summary,
+          }),
         },
       },
     });
@@ -71,7 +66,8 @@ export const updateDiaper = authActionClient
       BabyRole.ADMIN,
     );
 
-    const details = getDiaperDetails(
+    const recordedAt = data.recordedAt || new Date();
+    const summary = getDiaperSummary(
       data.type as DiaperType,
       data.color,
       data.texture,
@@ -85,20 +81,19 @@ export const updateDiaper = authActionClient
         color: data.color,
         texture: data.texture,
         note: data.note,
-        recordedAt: data.recordedAt || new Date(),
+        recordedAt,
         activityLog: {
           upsert: {
-            create: {
+            create: buildActivityLogData({
               babyId: diaper.babyId,
               category: "DIAPER",
-              title: "Diaper Change",
-              details,
-              recordedAt: data.recordedAt || new Date(),
-            },
-            update: {
-              details,
-              recordedAt: data.recordedAt || new Date(),
-            },
+              recordedAt,
+              summary,
+            }),
+            update: buildActivityLogUpdate({
+              recordedAt,
+              summary,
+            }),
           },
         },
       },

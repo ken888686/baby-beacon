@@ -1,103 +1,13 @@
 import "dotenv/config";
+import { type Prisma } from "../app/generated/prisma/client";
 import {
-  DiaperType,
-  FeedType,
-  HealthType,
-  type Prisma,
-} from "../app/generated/prisma/client";
+  getDiaperSummary,
+  getFeedSummary,
+  getGrowthSummary,
+  getHealthSummary,
+  getSleepSummary,
+} from "../lib/activity-log";
 import prisma from "../lib/prisma";
-
-function getSleepDetails(
-  startTime: Date,
-  endTime?: Date | null,
-  quality?: string | null,
-) {
-  if (!endTime) return { title: "Sleeping", details: "Sleeping..." };
-
-  const duration = `${Math.round(
-    (endTime.getTime() - startTime.getTime()) / (1000 * 60),
-  )}m`;
-  const details = `${duration} ${quality ? `(${quality})` : ""}`.trim();
-  return { title: "Sleep", details };
-}
-
-function getFeedDetails(
-  type: FeedType,
-  amount?: number | null,
-  duration?: number | null,
-  side?: string | null,
-  note?: string | null,
-) {
-  switch (type) {
-    case FeedType.BREAST:
-      return { title: "Breast Feed", details: `${side} side, ${duration}m` };
-    case FeedType.BOTTLE_FORMULA:
-      return {
-        title: "Bottle (Formula)",
-        details: [amount ? `${amount}ml` : null, note]
-          .filter(Boolean)
-          .join(", "),
-      };
-    case FeedType.BOTTLE_BREAST_MILK:
-      return { title: "Bottle (Breast Milk)", details: `${amount}ml` };
-    case FeedType.SOLID:
-      return { title: "Solid Food", details: note || "" };
-  }
-}
-
-function getDiaperDetails(
-  type: DiaperType,
-  color?: string | null,
-  texture?: string | null,
-  note?: string | null,
-) {
-  if (type === DiaperType.WET || type === DiaperType.DRY) return note || "";
-  return [color, texture, note].filter(Boolean).join(", ");
-}
-
-function getHealthDetails(record: {
-  type: HealthType;
-  value: number | null;
-  description: string | null;
-  symptoms: string[];
-  note: string | null;
-}) {
-  switch (record.type) {
-    case HealthType.TEMPERATURE:
-      return { title: "Temperature", details: `${record.value}°C` };
-    case HealthType.VACCINE:
-      return {
-        title: "Vaccine",
-        details: record.description || record.note || "",
-      };
-    case HealthType.MEDICINE:
-      return {
-        title: "Medicine",
-        details: record.description || record.note || "",
-      };
-    case HealthType.SYMPTOM:
-      return { title: "Symptom", details: record.symptoms.join(", ") };
-    default:
-      return {
-        title: "Health Log",
-        details: record.description || record.note || "",
-      };
-  }
-}
-
-function getGrowthDetails(record: {
-  height: number | null;
-  weight: number | null;
-  headCircumference: number | null;
-}) {
-  return [
-    record.height ? `H: ${record.height}cm` : null,
-    record.weight ? `W: ${record.weight}kg` : null,
-    record.headCircumference ? `HC: ${record.headCircumference}cm` : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
-}
 
 async function backfillActivityLogs(tx: Prisma.TransactionClient) {
   const counts = {
@@ -112,7 +22,7 @@ async function backfillActivityLogs(tx: Prisma.TransactionClient) {
     where: { activityLog: null },
   });
   for (const record of sleepLogs) {
-    const summary = getSleepDetails(
+    const summary = getSleepSummary(
       record.startTime,
       record.endTime,
       record.quality,
@@ -136,7 +46,7 @@ async function backfillActivityLogs(tx: Prisma.TransactionClient) {
     where: { activityLog: null },
   });
   for (const record of feedLogs) {
-    const summary = getFeedDetails(
+    const summary = getFeedSummary(
       record.type,
       record.amount,
       record.duration,
@@ -169,12 +79,12 @@ async function backfillActivityLogs(tx: Prisma.TransactionClient) {
         babyId: record.babyId,
         category: "DIAPER",
         title: "Diaper Change",
-        details: getDiaperDetails(
+        details: getDiaperSummary(
           record.type,
           record.color,
           record.texture,
           record.note,
-        ),
+        ).details,
         recordedAt: record.recordedAt,
         diaperId: record.id,
       },
@@ -186,7 +96,7 @@ async function backfillActivityLogs(tx: Prisma.TransactionClient) {
     where: { activityLog: null },
   });
   for (const record of healthLogs) {
-    const summary = getHealthDetails(record);
+    const summary = getHealthSummary(record);
     await tx.activityLog.upsert({
       where: { healthId: record.id },
       update: {},
@@ -213,7 +123,7 @@ async function backfillActivityLogs(tx: Prisma.TransactionClient) {
         babyId: record.babyId,
         category: "GROWTH",
         title: "Growth Check",
-        details: getGrowthDetails(record),
+        details: getGrowthSummary(record).details,
         recordedAt: record.recordedAt,
         growthId: record.id,
       },

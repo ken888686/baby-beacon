@@ -1,6 +1,11 @@
 "use server";
 
 import { BabyRole } from "@/app/generated/prisma/client";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getGrowthSummary,
+} from "@/lib/activity-log";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
@@ -8,19 +13,10 @@ import { logGrowthSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-function getGrowthDetails(input: z.infer<typeof logGrowthSchema>) {
-  return [
-    input.height ? `H: ${input.height}cm` : null,
-    input.weight ? `W: ${input.weight}kg` : null,
-    input.headCircumference ? `HC: ${input.headCircumference}cm` : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
-}
-
 export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
   .schema(logGrowthSchema)
   .action(async ({ parsedInput, ctx }) => {
+    const recordedAt = parsedInput.recordedAt || new Date();
     const log = await prisma.growthRecord.create({
       data: {
         babyId: parsedInput.babyId,
@@ -28,16 +24,15 @@ export const logGrowth = getBabyActionClient(BabyRole.ADMIN)
         weight: parsedInput.weight,
         headCircumference: parsedInput.headCircumference,
         note: parsedInput.note,
-        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedAt,
         recordedBy: ctx.session.user.id,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId: parsedInput.babyId,
             category: "GROWTH",
-            title: "Growth Check",
-            details: getGrowthDetails(parsedInput),
-            recordedAt: parsedInput.recordedAt || new Date(),
-          },
+            recordedAt,
+            summary: getGrowthSummary(parsedInput),
+          }),
         },
       },
     });
@@ -67,6 +62,7 @@ export const updateGrowth = authActionClient
 
     const input = { ...parsedInput.data, babyId: growth.babyId };
     const recordedAt = parsedInput.data.recordedAt || new Date();
+    const summary = getGrowthSummary(input);
     const log = await prisma.growthRecord.update({
       where: { id: growth.id },
       data: {
@@ -74,14 +70,13 @@ export const updateGrowth = authActionClient
         recordedAt,
         activityLog: {
           upsert: {
-            create: {
+            create: buildActivityLogData({
               babyId: growth.babyId,
               category: "GROWTH",
-              title: "Growth Check",
-              details: getGrowthDetails(input),
               recordedAt,
-            },
-            update: { details: getGrowthDetails(input), recordedAt },
+              summary,
+            }),
+            update: buildActivityLogUpdate({ recordedAt, summary }),
           },
         },
       },

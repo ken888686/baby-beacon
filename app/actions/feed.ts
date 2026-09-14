@@ -1,6 +1,11 @@
 "use server";
 
 import { BabyRole, FeedType, Side } from "@/app/generated/prisma/client";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getFeedSummary,
+} from "@/lib/activity-log";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
@@ -8,42 +13,11 @@ import { logFeedSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-function getFeedTitleAndDetails(
-  type: FeedType,
-  amount?: number | null,
-  duration?: number | null,
-  side?: Side | null,
-  note?: string | null,
-) {
-  let title = "Feed";
-  let details = "";
-  switch (type) {
-    case "BREAST":
-      title = "Breast Feed";
-      details = `${side} side, ${duration}m`;
-      break;
-    case "BOTTLE_FORMULA":
-      title = "Bottle (Formula)";
-      details = [amount ? `${amount}ml` : null, note]
-        .filter(Boolean)
-        .join(", ");
-      break;
-    case "BOTTLE_BREAST_MILK":
-      title = "Bottle (Breast Milk)";
-      details = `${amount}ml`;
-      break;
-    case "SOLID":
-      title = "Solid Food";
-      details = note || "";
-      break;
-  }
-  return { title, details };
-}
-
 export const logFeed = getBabyActionClient(BabyRole.ADMIN)
   .schema(logFeedSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { title, details } = getFeedTitleAndDetails(
+    const recordedAt = parsedInput.recordedAt || new Date();
+    const summary = getFeedSummary(
       parsedInput.type as FeedType,
       parsedInput.amount,
       parsedInput.duration,
@@ -59,16 +33,15 @@ export const logFeed = getBabyActionClient(BabyRole.ADMIN)
         duration: parsedInput.duration,
         side: parsedInput.side as Side,
         note: parsedInput.note,
-        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedAt,
         recordedBy: ctx.session.user.id,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId: parsedInput.babyId,
             category: "FEED",
-            title,
-            details,
-            recordedAt: parsedInput.recordedAt || new Date(),
-          },
+            recordedAt,
+            summary,
+          }),
         },
       },
     });
@@ -91,7 +64,8 @@ export const updateFeed = authActionClient
 
     await checkBabyPermission(feed.babyId, ctx.session.user.id, BabyRole.ADMIN);
 
-    const { title, details } = getFeedTitleAndDetails(
+    const recordedAt = data.recordedAt || new Date();
+    const summary = getFeedSummary(
       data.type as FeedType,
       data.amount,
       data.duration,
@@ -107,21 +81,19 @@ export const updateFeed = authActionClient
         duration: data.duration,
         side: data.side as Side,
         note: data.note,
-        recordedAt: data.recordedAt || new Date(),
+        recordedAt,
         activityLog: {
           upsert: {
-            create: {
+            create: buildActivityLogData({
               babyId: feed.babyId,
               category: "FEED",
-              title,
-              details,
-              recordedAt: data.recordedAt || new Date(),
-            },
-            update: {
-              title,
-              details,
-              recordedAt: data.recordedAt || new Date(),
-            },
+              recordedAt,
+              summary,
+            }),
+            update: buildActivityLogUpdate({
+              recordedAt,
+              summary,
+            }),
           },
         },
       },

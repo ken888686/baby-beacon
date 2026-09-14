@@ -1,23 +1,17 @@
 "use server";
 
 import { BabyRole } from "@/app/generated/prisma/client";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getSleepSummary,
+} from "@/lib/activity-log";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logSleepSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-
-function getSleepDetails(
-  startTime: Date,
-  endTime?: Date | null,
-  quality?: string | null,
-) {
-  if (!endTime) return { title: "Sleeping", details: "Sleeping..." };
-  const duration = `${Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))}m`;
-  const details = `${duration} ${quality ? `(${quality})` : ""}`.trim();
-  return { title: "Sleep", details };
-}
 
 export const startSleep = getBabyActionClient(BabyRole.ADMIN)
   .schema(z.object({ babyId: uuidSchema }))
@@ -42,12 +36,12 @@ export const startSleep = getBabyActionClient(BabyRole.ADMIN)
         startTime,
         recordedBy: ctx.session.user.id,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId,
             category: "SLEEP",
-            ...getSleepDetails(startTime),
             recordedAt: startTime,
-          },
+            summary: getSleepSummary(startTime),
+          }),
         },
       },
     });
@@ -79,13 +73,14 @@ export const endSleep = getBabyActionClient(BabyRole.ADMIN)
       data: {
         endTime,
         activityLog: {
-          update: {
-            ...getSleepDetails(
+          update: buildActivityLogUpdate({
+            summary: getSleepSummary(
               activeSleep.startTime,
               endTime,
               activeSleep.quality,
             ),
-          },
+            recordedAt: activeSleep.startTime,
+          }),
         },
       },
     });
@@ -101,7 +96,7 @@ export const logSleep = getBabyActionClient(BabyRole.ADMIN)
       throw new Error("Start time must be before end time");
     }
 
-    const { title, details } = getSleepDetails(
+    const summary = getSleepSummary(
       parsedInput.startTime,
       parsedInput.endTime,
       parsedInput.quality,
@@ -114,13 +109,12 @@ export const logSleep = getBabyActionClient(BabyRole.ADMIN)
         endTime: parsedInput.endTime,
         quality: parsedInput.quality,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId: parsedInput.babyId,
             category: "SLEEP",
-            title,
-            details,
             recordedAt: parsedInput.startTime,
-          },
+            summary,
+          }),
         },
       },
     });
@@ -155,11 +149,7 @@ export const updateSleep = authActionClient
       BabyRole.ADMIN,
     );
 
-    const { title, details } = getSleepDetails(
-      data.startTime,
-      data.endTime,
-      data.quality,
-    );
+    const summary = getSleepSummary(data.startTime, data.endTime, data.quality);
 
     const updateData: Parameters<typeof prisma.sleepLog.update>[0]["data"] = {
       startTime: data.startTime,
@@ -169,21 +159,19 @@ export const updateSleep = authActionClient
 
     if (sleepLog.activityLog) {
       updateData.activityLog = {
-        update: {
-          title,
-          details,
+        update: buildActivityLogUpdate({
+          summary,
           recordedAt: data.startTime,
-        },
+        }),
       };
     } else {
       updateData.activityLog = {
-        create: {
+        create: buildActivityLogData({
           babyId: sleepLog.babyId,
           category: "SLEEP",
-          title,
-          details,
           recordedAt: data.startTime,
-        },
+          summary,
+        }),
       };
     }
 

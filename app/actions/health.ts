@@ -1,6 +1,11 @@
 "use server";
 
 import { BabyRole, HealthType } from "@/app/generated/prisma/client";
+import {
+  buildActivityLogData,
+  buildActivityLogUpdate,
+  getHealthSummary,
+} from "@/lib/activity-log";
 import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
@@ -8,34 +13,11 @@ import { logHealthSchema, uuidSchema } from "@/lib/schemas";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-function getHealthSummary(input: z.infer<typeof logHealthSchema>) {
-  let title = "Health Log";
-  let details = input.description || input.note || "";
-
-  switch (input.type) {
-    case HealthType.TEMPERATURE:
-      title = "Temperature";
-      details = `${input.value}°C`;
-      break;
-    case HealthType.VACCINE:
-      title = "Vaccine";
-      break;
-    case HealthType.MEDICINE:
-      title = "Medicine";
-      break;
-    case HealthType.SYMPTOM:
-      title = "Symptom";
-      details = input.symptoms?.join(", ") || "";
-      break;
-  }
-
-  return { title, details };
-}
-
 export const logHealth = getBabyActionClient(BabyRole.ADMIN)
   .schema(logHealthSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const { title, details } = getHealthSummary(parsedInput);
+    const recordedAt = parsedInput.recordedAt || new Date();
+    const summary = getHealthSummary(parsedInput);
 
     const log = await prisma.healthLog.create({
       data: {
@@ -45,16 +27,15 @@ export const logHealth = getBabyActionClient(BabyRole.ADMIN)
         description: parsedInput.description,
         symptoms: parsedInput.symptoms,
         note: parsedInput.note,
-        recordedAt: parsedInput.recordedAt || new Date(),
+        recordedAt,
         recordedBy: ctx.session.user.id,
         activityLog: {
-          create: {
+          create: buildActivityLogData({
             babyId: parsedInput.babyId,
             category: "HEALTH",
-            title,
-            details,
-            recordedAt: parsedInput.recordedAt || new Date(),
-          },
+            recordedAt,
+            summary,
+          }),
         },
       },
     });
@@ -83,7 +64,7 @@ export const updateHealth = authActionClient
     );
 
     const input = { ...parsedInput.data, babyId: health.babyId };
-    const { title, details } = getHealthSummary(input);
+    const summary = getHealthSummary(input);
     const recordedAt = parsedInput.data.recordedAt || new Date();
 
     const log = await prisma.healthLog.update({
@@ -93,14 +74,13 @@ export const updateHealth = authActionClient
         recordedAt,
         activityLog: {
           upsert: {
-            create: {
+            create: buildActivityLogData({
               babyId: health.babyId,
               category: "HEALTH",
-              title,
-              details,
               recordedAt,
-            },
-            update: { title, details, recordedAt },
+              summary,
+            }),
+            update: buildActivityLogUpdate({ recordedAt, summary }),
           },
         },
       },
