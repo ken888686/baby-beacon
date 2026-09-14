@@ -14,6 +14,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, ChevronsUpDown, Plus, Settings } from "lucide-react";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { switchBaby } from "../actions/baby";
 import type { Baby, Gender } from "../generated/prisma/client";
 import { AddBabyDialog } from "./AddBabyDialog";
@@ -42,7 +43,10 @@ export function BabySwitcher({
 
   const handleBabySelect = (baby: Baby) => {
     startTransition(async () => {
-      await switchBaby(baby.id);
+      const result = await switchBaby({ babyId: baby.id });
+      if (result?.serverError) {
+        toast.error(result.serverError);
+      }
     });
   };
 
