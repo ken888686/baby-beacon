@@ -85,6 +85,19 @@ provides a calm, accessible interface for tracking daily activities, growth metr
    the current Prisma schema. The backfill is idempotent and only creates missing
    `ActivityLog` records.
 
+   Vercel production deployments run `prisma migrate deploy` automatically before
+   the Next.js build through `vercel.json`. Make sure the Production environment's
+   `DATABASE_URL` points to the intended database. To apply migrations manually:
+
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+   If an existing database has the baseline marked as applied but is missing a
+   table from that baseline, create a forward migration for the missing schema
+   before deploying. `prisma migrate deploy` does not re-run migrations that are
+   already recorded as applied.
+
 5. **Run the Development Server:**
 
    ```bash
