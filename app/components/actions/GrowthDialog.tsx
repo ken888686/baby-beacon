@@ -1,6 +1,6 @@
 "use client";
 
-import { logGrowth } from "@/app/actions/growth";
+import { logGrowth, updateGrowth } from "@/app/actions/growth";
 import { QuickAction } from "@/app/components/QuickAction";
 import { GrowthRecord } from "@/app/generated/prisma/client";
 import { Button } from "@/components/ui/button";
@@ -76,14 +76,16 @@ export function GrowthForm({
 
     startTransition(async () => {
       try {
-        const result = await logGrowth({
-          babyId,
+        const data = {
           weight: weightStr ? parseFloat(weightStr) : undefined,
           height: heightStr ? parseFloat(heightStr) : undefined,
           headCircumference: headStr ? parseFloat(headStr) : undefined,
           note,
           recordedAt: dateTime,
-        });
+        };
+        const result = initialData
+          ? await updateGrowth({ id: initialData.id, data })
+          : await logGrowth({ babyId, ...data });
 
         if (result?.serverError) {
           toast.error(result.serverError);

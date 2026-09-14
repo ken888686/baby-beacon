@@ -5,7 +5,7 @@ import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logFeedSchema } from "@/lib/schemas";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 function getFeedTitleAndDetails(
@@ -74,8 +74,6 @@ export const logFeed = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 type workaround
-    revalidateTag(`timeline-${parsedInput.babyId}`);
     return log;
   });
 
@@ -111,17 +109,24 @@ export const updateFeed = authActionClient
         note: data.note,
         recordedAt: data.recordedAt || new Date(),
         activityLog: {
-          update: {
-            title,
-            details,
-            recordedAt: data.recordedAt || new Date(),
+          upsert: {
+            create: {
+              babyId: feed.babyId,
+              category: "FEED",
+              title,
+              details,
+              recordedAt: data.recordedAt || new Date(),
+            },
+            update: {
+              title,
+              details,
+              recordedAt: data.recordedAt || new Date(),
+            },
           },
         },
       },
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 type workaround
-    revalidateTag(`timeline-${feed.babyId}`);
     return log;
   });

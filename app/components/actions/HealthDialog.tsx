@@ -1,6 +1,6 @@
 "use client";
 
-import { logHealth } from "@/app/actions/health";
+import { logHealth, updateHealth } from "@/app/actions/health";
 import { QuickAction } from "@/app/components/QuickAction";
 import { HealthLog } from "@/app/generated/prisma/client";
 import { HealthType } from "@/app/generated/prisma/enums";
@@ -103,15 +103,16 @@ export function HealthForm({
 
     startTransition(async () => {
       try {
-        // Note: updateHealth action needs to be implemented in actions/health.ts if needed
-        const result = await logHealth({
-          babyId,
+        const data = {
           type: initialData?.type || type,
           value: valueStr ? parseFloat(valueStr) : undefined,
           description,
           note,
           recordedAt: dateTime,
-        });
+        };
+        const result = initialData
+          ? await updateHealth({ id: initialData.id, data })
+          : await logHealth({ babyId, ...data });
 
         if (result?.serverError) {
           toast.error(result.serverError);

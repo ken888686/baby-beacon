@@ -1,32 +1,41 @@
 "use server";
 
 import { BabyRole, HealthType } from "@/app/generated/prisma/client";
+import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { getBabyActionClient } from "@/lib/safe-action";
+import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logHealthSchema } from "@/lib/schemas";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+function getHealthSummary(input: z.infer<typeof logHealthSchema>) {
+  let title = "Health Log";
+  let details = input.description || input.note || "";
+
+  switch (input.type) {
+    case HealthType.TEMPERATURE:
+      title = "Temperature";
+      details = `${input.value}°C`;
+      break;
+    case HealthType.VACCINE:
+      title = "Vaccine";
+      break;
+    case HealthType.MEDICINE:
+      title = "Medicine";
+      break;
+    case HealthType.SYMPTOM:
+      title = "Symptom";
+      details = input.symptoms?.join(", ") || "";
+      break;
+  }
+
+  return { title, details };
+}
 
 export const logHealth = getBabyActionClient(BabyRole.ADMIN)
   .schema(logHealthSchema)
   .action(async ({ parsedInput, ctx }) => {
-    let title = "Health Log";
-    let details = parsedInput.description || parsedInput.note || "";
-    switch (parsedInput.type) {
-      case HealthType.TEMPERATURE:
-        title = "Temperature";
-        details = `${parsedInput.value}°C`;
-        break;
-      case HealthType.VACCINE:
-        title = "Vaccine";
-        break;
-      case HealthType.MEDICINE:
-        title = "Medicine";
-        break;
-      case HealthType.SYMPTOM:
-        title = "Symptom";
-        details = parsedInput.symptoms?.join(", ") || "";
-        break;
-    }
+    const { title, details } = getHealthSummary(parsedInput);
 
     const log = await prisma.healthLog.create({
       data: {
@@ -51,7 +60,40 @@ export const logHealth = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 type workaround
-    revalidateTag(`timeline-${parsedInput.babyId}`);
+    return log;
+  });
+
+export const updateHealth = authActionClient
+  .schema(
+    z.object({
+      id: z.string(),
+      data: logHealthSchema.omit({ babyId: true }),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const health = await prisma.healthLog.findUnique({ where: { id: parsedInput.id } });
+    if (!health) throw new Error("Health record not found");
+
+    await checkBabyPermission(health.babyId, ctx.session.user.id, BabyRole.ADMIN);
+
+    const input = { ...parsedInput.data, babyId: health.babyId };
+    const { title, details } = getHealthSummary(input);
+    const recordedAt = parsedInput.data.recordedAt || new Date();
+
+    const log = await prisma.healthLog.update({
+      where: { id: health.id },
+      data: {
+        ...parsedInput.data,
+        recordedAt,
+        activityLog: {
+          upsert: {
+            create: { babyId: health.babyId, category: "HEALTH", title, details, recordedAt },
+            update: { title, details, recordedAt },
+          },
+        },
+      },
+    });
+
+    revalidatePath("/");
     return log;
   });

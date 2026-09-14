@@ -5,7 +5,7 @@ import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logSleepSchema } from "@/lib/schemas";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 function getSleepDetails(
@@ -53,8 +53,6 @@ export const startSleep = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 workaround
-    revalidateTag(`timeline-${babyId}`);
     return sleep;
   });
 
@@ -93,8 +91,6 @@ export const endSleep = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 workaround
-    revalidateTag(`timeline-${babyId}`);
     return sleep;
   });
 
@@ -130,8 +126,6 @@ export const logSleep = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 workaround
-    revalidateTag(`timeline-${parsedInput.babyId}`);
     return sleep;
   });
 
@@ -199,7 +193,5 @@ export const updateSleep = authActionClient
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 workaround
-    revalidateTag(`timeline-${sleepLog.babyId}`);
     return sleep;
   });

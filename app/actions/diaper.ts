@@ -5,7 +5,7 @@ import { checkBabyPermission } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
 import { logDiaperSchema } from "@/lib/schemas";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 function getDiaperDetails(
@@ -50,8 +50,6 @@ export const logDiaper = getBabyActionClient(BabyRole.ADMIN)
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 type workaround
-    revalidateTag(`timeline-${parsedInput.babyId}`);
     return log;
   });
 
@@ -89,16 +87,23 @@ export const updateDiaper = authActionClient
         note: data.note,
         recordedAt: data.recordedAt || new Date(),
         activityLog: {
-          update: {
-            details,
-            recordedAt: data.recordedAt || new Date(),
+          upsert: {
+            create: {
+              babyId: diaper.babyId,
+              category: "DIAPER",
+              title: "Diaper Change",
+              details,
+              recordedAt: data.recordedAt || new Date(),
+            },
+            update: {
+              details,
+              recordedAt: data.recordedAt || new Date(),
+            },
           },
         },
       },
     });
 
     revalidatePath("/");
-    // @ts-expect-error Next.js 16 type workaround
-    revalidateTag(`timeline-${diaper.babyId}`);
     return log;
   });

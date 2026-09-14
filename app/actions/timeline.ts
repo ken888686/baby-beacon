@@ -95,8 +95,5 @@ export async function deleteTimelineRecord(id: string) {
       break;
   }
 
-  // 4. 清除緩存
-  // @ts-expect-error next15 generic
-  revalidateTag(`timeline-${activity.babyId}`);
   revalidatePath("/");
 }

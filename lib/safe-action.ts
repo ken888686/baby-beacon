@@ -8,11 +8,6 @@ import { checkBabyPermission, getSessionOrThrow } from "./auth-utils";
 export const actionClient = createSafeActionClient({
   handleServerError: (e) => {
     console.error("Action error:", e);
-
-    if (e.message) {
-      return e.message;
-    }
-
     return DEFAULT_SERVER_ERROR_MESSAGE;
   },
 });
