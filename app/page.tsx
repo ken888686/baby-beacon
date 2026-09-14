@@ -20,9 +20,8 @@ function LiveStatusLoader() {
   return (
     <section className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        {/* StatusCard approximate height is around 90-100px */}
-        <Skeleton className="h-[96px] w-full rounded-2xl" />
-        <Skeleton className="h-[96px] w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-3xl" />
+        <Skeleton className="h-40 w-full rounded-3xl" />
       </div>
     </section>
   );
@@ -39,6 +38,7 @@ import { FeedLog, SleepLog } from "./generated/prisma/client";
 // 4. Main Page
 export default async function Home() {
   let currentBabyId: string | undefined;
+  let currentBabyName: string | undefined;
   let stats: { lastSleep: SleepLog | null; lastFeed: FeedLog | null } = {
     lastSleep: null,
     lastFeed: null,
@@ -55,6 +55,7 @@ export default async function Home() {
       const selectedId = cookieStore.get("selectedBabyId")?.value;
       const targetBaby = babies.find((b) => b.id === selectedId) || babies[0];
       currentBabyId = targetBaby.id;
+      currentBabyName = targetBaby.name;
 
       // Fetch fast stats to power Quick Actions immediately
       stats = await getBabyStats(targetBaby.id);
@@ -62,24 +63,72 @@ export default async function Home() {
   }
 
   return (
-    <main className="bg-background min-h-screen">
-      <div className="mx-auto max-w-md space-y-8 px-4 py-6 md:max-w-lg">
+    <main className="bg-background min-h-dvh">
+      <div className="mx-auto max-w-xl space-y-10 px-4 py-4 pb-12 sm:px-6">
         {/* Header (Instant Load) */}
         <Header currentBabyId={currentBabyId} />
 
-        {/* Status Section (Instant Load) */}
-        {currentBabyId ? (
-          <LiveStatusSection babyId={currentBabyId} initialStats={stats} />
-        ) : (
-          <LiveStatusLoader />
-        )}
+        <section
+          aria-labelledby="dashboard-heading"
+          className="bg-primary text-primary-foreground relative overflow-hidden rounded-[2rem] px-6 py-7 shadow-[0_18px_40px_rgba(21,128,61,0.2)]"
+        >
+          <div className="bg-primary-foreground/10 absolute -top-16 -right-12 h-40 w-40 rounded-full" />
+          <div className="bg-primary-foreground/10 absolute right-12 -bottom-20 h-32 w-32 rounded-full" />
+          <div className="relative max-w-sm">
+            <p className="text-primary-foreground/75 text-sm font-semibold">
+              {currentBabyName
+                ? `Today with ${currentBabyName}`
+                : "Your care journal"}
+            </p>
+            <h1
+              id="dashboard-heading"
+              className="mt-2 text-3xl font-bold tracking-tight"
+            >
+              {currentBabyName
+                ? "A calmer day of care."
+                : "Start tracking the little moments."}
+            </h1>
+            <p className="text-primary-foreground/80 mt-3 text-sm leading-6">
+              {currentBabyName
+                ? "See what matters now, then log the next moment in seconds."
+                : "Add a baby from the menu above to begin your care timeline."}
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="status-heading" className="space-y-4">
+          <div className="px-1">
+            <p className="text-primary text-xs font-bold tracking-[0.1em] uppercase">
+              Live overview
+            </p>
+            <h2
+              id="status-heading"
+              className="text-foreground mt-1 text-xl font-bold"
+            >
+              Right now
+            </h2>
+          </div>
+          {currentBabyId ? (
+            <LiveStatusSection babyId={currentBabyId} initialStats={stats} />
+          ) : (
+            <LiveStatusLoader />
+          )}
+        </section>
 
         {/* Quick Actions (Instant Load) */}
-        <section>
-          <h2 className="text-text-main mb-4 px-1 text-lg font-bold">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-3 gap-3">
+        <section aria-labelledby="quick-actions-heading">
+          <div className="mb-4 px-1">
+            <p className="text-primary text-xs font-bold tracking-[0.1em] uppercase">
+              Quick log
+            </p>
+            <h2
+              id="quick-actions-heading"
+              className="text-foreground mt-1 text-xl font-bold"
+            >
+              Capture a moment
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {currentBabyId ? (
               <SleepDialog babyId={currentBabyId} lastSleep={stats.lastSleep} />
             ) : (
