@@ -1,36 +1,32 @@
 "use server";
 
-import { BabyRole, Gender } from "@/app/generated/prisma/client";
+import { BabyRole } from "@/app/generated/prisma/client";
 import { getSessionOrThrow, withBabyAccess } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
-import { createBabySchema, updateBabySchema } from "@/lib/schemas";
-import { revalidatePath } from "next/cache";
+import { authActionClient, getBabyActionClient } from "@/lib/safe-action";
+import { createBabySchema, updateBabySchema, uuidSchema } from "@/lib/schemas";
+import { revalidateDashboard } from "@/lib/revalidation";
 import { cookies } from "next/headers";
+import { z } from "zod";
 
-export async function createBaby(data: {
-  name: string;
-  birthDate: Date;
-  gender: Gender;
-  photoUrl?: string;
-}) {
-  const session = await getSessionOrThrow();
-  const validated = createBabySchema.parse(data);
-
-  const baby = await prisma.baby.create({
-    data: {
-      ...validated,
-      users: {
-        create: {
-          userId: session.user.id,
-          role: BabyRole.OWNER,
+export const createBaby = authActionClient
+  .schema(createBabySchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const baby = await prisma.baby.create({
+      data: {
+        ...parsedInput,
+        users: {
+          create: {
+            userId: ctx.session.user.id,
+            role: BabyRole.OWNER,
+          },
         },
       },
-    },
-  });
+    });
 
-  revalidatePath("/");
-  return baby;
-}
+    revalidateDashboard();
+    return baby;
+  });
 
 export async function getBabies(userId?: string) {
   const currentUserId = userId || (await getSessionOrThrow()).user.id;
@@ -52,10 +48,12 @@ export const getBaby = withBabyAccess(async (id: string) => {
   });
 });
 
-export const switchBaby = withBabyAccess(async (babyId: string) => {
-  (await cookies()).set("selectedBabyId", babyId);
-  revalidatePath("/");
-});
+export const switchBaby = getBabyActionClient(BabyRole.VIEWER)
+  .schema(z.object({ babyId: uuidSchema }))
+  .action(async ({ parsedInput }) => {
+    (await cookies()).set("selectedBabyId", parsedInput.babyId);
+    revalidateDashboard();
+  });
 
 export const getBabyStats = withBabyAccess(async (babyId: string) => {
   const [lastSleep, lastFeed] = await Promise.all([
@@ -72,40 +70,36 @@ export const getBabyStats = withBabyAccess(async (babyId: string) => {
   return { lastSleep, lastFeed };
 });
 
-export const updateBaby = withBabyAccess(
-  async (
-    babyId: string,
-    data: {
-      name?: string;
-      birthDate?: Date;
-      gender?: Gender;
-      photoUrl?: string;
-    },
-  ) => {
-    const validated = updateBabySchema.parse(data);
-
+export const updateBaby = getBabyActionClient(BabyRole.ADMIN)
+  .schema(
+    z.object({
+      babyId: uuidSchema,
+      data: updateBabySchema,
+    }),
+  )
+  .action(async ({ parsedInput }) => {
     const baby = await prisma.baby.update({
-      where: { id: babyId },
-      data: validated,
+      where: { id: parsedInput.babyId },
+      data: parsedInput.data,
     });
 
-    revalidatePath("/");
+    revalidateDashboard();
     return baby;
-  },
-  BabyRole.ADMIN,
-);
-
-export const deleteBaby = withBabyAccess(async (babyId: string) => {
-  await prisma.baby.delete({
-    where: { id: babyId },
   });
 
-  const cookieStore = await cookies();
-  const selectedId = cookieStore.get("selectedBabyId")?.value;
+export const deleteBaby = getBabyActionClient(BabyRole.OWNER)
+  .schema(z.object({ babyId: uuidSchema }))
+  .action(async ({ parsedInput }) => {
+    await prisma.baby.delete({
+      where: { id: parsedInput.babyId },
+    });
 
-  if (selectedId === babyId) {
-    cookieStore.delete("selectedBabyId");
-  }
+    const cookieStore = await cookies();
+    const selectedId = cookieStore.get("selectedBabyId")?.value;
 
-  revalidatePath("/");
-}, BabyRole.OWNER);
+    if (selectedId === parsedInput.babyId) {
+      cookieStore.delete("selectedBabyId");
+    }
+
+    revalidateDashboard();
+  });

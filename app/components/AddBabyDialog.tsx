@@ -45,11 +45,19 @@ export function AddBabyDialog({ open, onOpenChange }: AddBabyDialogProps) {
     }
 
     startTransition(async () => {
-      await createBaby({
+      const result = await createBaby({
         name,
         birthDate: new Date(birthDate),
         gender,
       });
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+      if (result?.validationErrors) {
+        toast.error("Please check the baby details and try again.");
+        return;
+      }
       toast.success("Baby added successfully!");
       onOpenChange(false);
       setBirthDate(undefined);

@@ -123,26 +123,41 @@ export function DiaperForm({
 
     startTransition(async () => {
       try {
+        let result;
         if (initialData) {
-          await updateDiaper(initialData.id, {
-            type: selectedType,
-            color,
-            texture,
-            note,
-            recordedAt: dateTime,
+          result = await updateDiaper({
+            id: initialData.id,
+            data: {
+              type: selectedType,
+              color: color || undefined,
+              texture: texture || undefined,
+              note: note || undefined,
+              recordedAt: dateTime,
+            },
           });
-          toast.success("Diaper record updated");
         } else {
-          await logDiaper({
+          result = await logDiaper({
             babyId,
             type: selectedType,
-            color,
-            texture,
-            note,
+            color: color || undefined,
+            texture: texture || undefined,
+            note: note || undefined,
             recordedAt: dateTime,
           });
-          toast.success("Diaper logged successfully");
         }
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Invalid form inputs provided.");
+          return;
+        }
+
+        toast.success(
+          `Diaper record ${initialData ? "updated" : "logged"} successfully`,
+        );
         onSuccess?.();
       } catch (error) {
         toast.error("Failed to save diaper record: " + error);
@@ -223,10 +238,7 @@ export function DiaperForm({
         <>
           <Field>
             <FieldLabel>Color</FieldLabel>
-            <Select
-              name="color"
-              defaultValue={initialData?.color || undefined}
-            >
+            <Select name="color" defaultValue={initialData?.color || undefined}>
               <SelectTrigger>
                 <SelectValue placeholder="Select color" />
               </SelectTrigger>

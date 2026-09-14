@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Smart monitoring and health tracking for your little ones.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fbfbf6",
-    theme_color: "#99b8a8",
+    background_color: "#F0FDF4",
+    theme_color: "#15803D",
     icons: [
       {
         src: "/icon",

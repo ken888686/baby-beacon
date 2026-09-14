@@ -96,6 +96,7 @@ model UserBaby {
   updatedAt DateTime @updatedAt
 
   @@id([userId, babyId])
+  @@index([babyId])
   @@map("users_babies")
 }
 
@@ -116,6 +117,7 @@ model Baby {
   sleepLogs     SleepLog[]
   feedLogs      FeedLog[]
   diaperLogs    DiaperLog[]
+  activityLogs  ActivityLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,6 +139,8 @@ model GrowthRecord {
   recordedBy String
   note       String?
 
+  activityLog ActivityLog?
+
   // 索引優化：快速查詢特定寶寶的生長歷史
   @@index([babyId, recordedAt(sort: Desc)])
   @@map("growth_records")
@@ -157,6 +161,8 @@ model HealthLog {
   recordedBy String
   note       String?
 
+  activityLog ActivityLog?
+
   @@index([babyId, recordedAt(sort: Desc)])
   @@map("health_logs")
 }
@@ -176,8 +182,11 @@ model SleepLog {
   recordedBy String? // User ID
   updatedAt  DateTime @updatedAt
 
+  activityLog ActivityLog?
+
   // 索引優化：查詢最近睡眠紀錄
   @@index([babyId, startTime(sort: Desc)])
+  @@index([babyId, endTime])
   @@map("sleep_logs")
 }
 
@@ -197,6 +206,8 @@ model FeedLog {
   recordedBy String
   note       String?
 
+  activityLog ActivityLog?
+
   @@index([babyId, recordedAt(sort: Desc)])
   @@map("feed_logs")
 }
@@ -214,6 +225,8 @@ model DiaperLog {
   recordedAt DateTime @default(now())
   recordedBy String
   note       String?
+
+  activityLog ActivityLog?
 
   @@index([babyId, recordedAt(sort: Desc)])
   @@map("diaper_logs")
@@ -258,4 +271,42 @@ enum DiaperType {
   DIRTY
   MIXED
   DRY
+}
+
+enum ActivityCategory {
+  SLEEP
+  FEED
+  DIAPER
+  HEALTH
+  GROWTH
+}
+
+// 8. 統一時間軸紀錄 (Performance optimized event store)
+model ActivityLog {
+  id     String @id @default(uuid())
+  babyId String
+  baby   Baby   @relation(fields: [babyId], references: [id], onDelete: Cascade)
+
+  category   ActivityCategory
+  title      String
+  details    String
+  recordedAt DateTime
+
+  sleepId String?   @unique
+  sleep   SleepLog? @relation(fields: [sleepId], references: [id], onDelete: Cascade)
+
+  feedId String?  @unique
+  feed   FeedLog? @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  diaperId String?    @unique
+  diaper   DiaperLog? @relation(fields: [diaperId], references: [id], onDelete: Cascade)
+
+  healthId String?    @unique
+  health   HealthLog? @relation(fields: [healthId], references: [id], onDelete: Cascade)
+
+  growthId String?       @unique
+  growth   GrowthRecord? @relation(fields: [growthId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, recordedAt(sort: Desc)])
+  @@map("activity_logs")
 }

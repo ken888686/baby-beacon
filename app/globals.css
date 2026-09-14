@@ -4,36 +4,36 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Baby Beacon Design System Colors - Neutral Soft Sage Theme */
-  --background: #fbfbf6; /* Soft warm white */
-  --foreground: #4b5563; /* Warm dark gray */
+  /* Baby Beacon — calm, high-contrast care dashboard */
+  --background: #f3f8f3;
+  --foreground: #17261d;
 
   --card: #ffffff;
-  --card-foreground: #4b5563;
+  --card-foreground: #17261d;
 
   --popover: #ffffff;
-  --popover-foreground: #4b5563;
+  --popover-foreground: #17261d;
 
-  --primary: #99b8a8; /* Soft Sage Green */
+  --primary: #15803d;
   --primary-foreground: #ffffff;
 
-  --secondary: #e8efe9; /* Very light green mist */
-  --secondary-foreground: #374151;
+  --secondary: #dff3e5;
+  --secondary-foreground: #173d25;
 
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
+  --muted: #e9f1ea;
+  --muted-foreground: #526257;
 
-  --accent: #e8efe9;
-  --accent-foreground: #374151;
+  --accent: #f8e7bd;
+  --accent-foreground: #5e3b00;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #dce5df;
-  --input: #dce5df;
-  --ring: #99b8a8;
+  --border: #d7e5d9;
+  --input: #d7e5d9;
+  --ring: #15803d;
 
-  --radius: 0.75rem; /* Rounded corners for soft UI */
+  --radius: 1rem;
 
   /* Keep chart vars for now or customize later */
   --chart-1: oklch(0.646 0.222 41.116);
@@ -42,14 +42,14 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  --sidebar: #fbfbf6;
-  --sidebar-foreground: #4b5563;
-  --sidebar-primary: #99b8a8;
+  --sidebar: #f3f8f3;
+  --sidebar-foreground: #17261d;
+  --sidebar-primary: #15803d;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e8efe9;
-  --sidebar-accent-foreground: #374151;
-  --sidebar-border: #dce5df;
-  --sidebar-ring: #99b8a8;
+  --sidebar-accent: #dff3e5;
+  --sidebar-accent-foreground: #173d25;
+  --sidebar-border: #d7e5d9;
+  --sidebar-ring: #15803d;
 
   /* Custom Font Variables */
   --font-display: var(--font-varela);
@@ -102,21 +102,24 @@
 
 @layer utilities {
   .shadow-soft-out {
-    box-shadow: 
-      8px 8px 16px rgba(0, 0, 0, 0.05),
-      -8px -8px 16px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 12px 28px rgba(28, 70, 39, 0.08);
   }
   .shadow-soft-in {
-    box-shadow: 
-      inset 4px 4px 8px rgba(0, 0, 0, 0.05),
-      inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 1px 2px rgba(20, 69, 34, 0.08);
   }
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(223, 243, 229, 0.9),
+      transparent 30rem
+    ),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-body), sans-serif;
+  min-height: 100dvh;
 }
 
 h1,
@@ -134,5 +137,9 @@ h6 {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    @apply bg-secondary text-foreground;
   }
 }

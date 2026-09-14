@@ -1,7 +1,13 @@
 "use client";
 
 import { deleteTimelineRecord } from "@/app/actions/timeline";
-import { DiaperLog, FeedLog, GrowthRecord, HealthLog, SleepLog } from "@/app/generated/prisma/client";
+import {
+  DiaperLog,
+  FeedLog,
+  GrowthRecord,
+  HealthLog,
+  SleepLog,
+} from "@/app/generated/prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +44,7 @@ import {
   Thermometer,
   Trash2,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { TimelineItem } from "../actions/timeline";
 import { DiaperForm } from "./actions/DiaperDialog";
@@ -47,17 +53,19 @@ import { GrowthForm } from "./actions/GrowthDialog";
 import { HealthForm } from "./actions/HealthDialog";
 import { SleepForm } from "./actions/SleepDialog";
 
-type Category = "SLEEP" | "FEED" | "DIAPER" | "HEALTH" | "GROWTH";
-
 interface RecordListProps {
   records: TimelineItem[];
 }
 
 export function RecordList({ records }: RecordListProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteCategory, setDeleteCategory] = useState<Category | null>(null);
   const [editingRecord, setEditingRecord] = useState<TimelineItem | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const [optimisticRecords, removeOptimisticRecord] = useOptimistic(
+    records,
+    (state, idToRemove: string) => state.filter((r) => r.id !== idToRemove),
+  );
 
   const getIcon = (category: string) => {
     switch (category) {
@@ -94,14 +102,24 @@ export function RecordList({ records }: RecordListProps) {
   };
 
   const handleDelete = () => {
-    if (!deleteId || !deleteCategory) return;
+    if (!deleteId) return;
 
     startTransition(async () => {
       try {
-        await deleteTimelineRecord(deleteId, deleteCategory);
+        removeOptimisticRecord(deleteId); // Optimistically remove the item
+        const result = await deleteTimelineRecord({
+          id: deleteId,
+        });
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Unable to delete this record.");
+          return;
+        }
         toast.success("Record deleted successfully");
         setDeleteId(null);
-        setDeleteCategory(null);
       } catch (error) {
         toast.error("Failed to delete record");
         console.error(error);
@@ -110,45 +128,67 @@ export function RecordList({ records }: RecordListProps) {
   };
 
   return (
-    <div className="space-y-3">
-      <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
-      {records.length === 0 ? (
-        <div className="py-10 text-center opacity-60">
-          <p>No recent records</p>
+    <div className="space-y-4">
+      <div className="flex items-end justify-between px-1">
+        <div>
+          <p className="text-primary text-xs font-bold tracking-widest uppercase">
+            Timeline
+          </p>
+          <h3 className="text-foreground mt-1 text-xl font-bold">
+            Latest activity
+          </h3>
+        </div>
+        <span className="text-muted-foreground text-xs font-medium">
+          {optimisticRecords.length} recent
+        </span>
+      </div>
+      {optimisticRecords.length === 0 ? (
+        <div className="border-border bg-card/70 rounded-3xl border border-dashed px-6 py-10 text-center">
+          <p className="text-foreground font-semibold">No moments logged yet</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Your care timeline will appear here.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {records.map((record) => {
+          {optimisticRecords.map((record) => {
             const Icon = getIcon(record.category);
             const colorClass = getIconColor(record.category);
 
             return (
               <Card
                 key={record.id}
-                className="group border-none shadow-soft-out animate-fade-in transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                className="group bg-card shadow-soft-out rounded-3xl border border-white/80 transition-all duration-200 hover:-translate-y-0.5"
               >
-                <CardContent className="flex items-center gap-4 p-4 pr-2">
-                  <div className={`rounded-full p-2.5 shadow-soft-in ${colorClass}`}>
-                    <Icon className="h-5 w-5" />
+                <CardContent className="flex items-center gap-3 p-4 pr-2">
+                  <div className={`rounded-2xl p-2.5 ${colorClass}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
                   </div>
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1">
                     <p className="text-foreground font-semibold">
                       {record.title}
                     </p>
-                    <p className="text-sm opacity-70">{record.details}</p>
+                    <p className="text-muted-foreground truncate text-sm">
+                      {record.details || "No additional details"}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium whitespace-nowrap opacity-50">
+                    <span className="text-muted-foreground text-xs font-medium whitespace-nowrap">
                       {formatDistanceToNow(record.recordedAt, {
                         addSuffix: true,
                       })}
                     </span>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="focus:ring-ring data-[state=open]:bg-accent text-muted-foreground hover:text-foreground ml-1 rounded-full p-1 opacity-0 transition-opacity group-hover:opacity-100 focus:ring-2 focus:outline-none">
-                        <MoreVertical className="h-4 w-4" />
+                      <DropdownMenuTrigger
+                        aria-label={`Actions for ${record.title}`}
+                        className="focus:ring-ring data-[state=open]:bg-accent text-muted-foreground hover:text-foreground ml-1 rounded-full p-2 opacity-100 transition-colors focus:ring-2 focus:outline-none"
+                      >
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingRecord(record)}>
+                        <DropdownMenuItem
+                          onClick={() => setEditingRecord(record)}
+                        >
                           <Edit2 className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
@@ -156,7 +196,6 @@ export function RecordList({ records }: RecordListProps) {
                           className="text-destructive focus:text-destructive"
                           onClick={() => {
                             setDeleteId(record.id);
-                            setDeleteCategory(record.category);
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -177,7 +216,7 @@ export function RecordList({ records }: RecordListProps) {
         open={!!editingRecord}
         onOpenChange={(open) => !open && setEditingRecord(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-106.25">
           <DialogHeader>
             <DialogTitle>Edit {editingRecord?.title}</DialogTitle>
           </DialogHeader>
@@ -252,10 +291,15 @@ export function RecordList({ records }: RecordListProps) {
 
 export function RecordListLoader() {
   return (
-    <div className="space-y-3">
-      <h3 className="px-1 text-lg font-bold">Recent Activity</h3>
-      <div className="space-y-4">
-        <Skeleton className="h-[200px] w-full rounded-2xl" />
+    <div className="space-y-4">
+      <div className="space-y-2 px-1">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-6 w-40" />
+      </div>
+      <div className="space-y-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} className="h-21 w-full rounded-3xl" />
+        ))}
       </div>
     </div>
   );

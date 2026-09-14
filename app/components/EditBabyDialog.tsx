@@ -65,11 +65,22 @@ export function EditBabyDialog({
 
     startTransition(async () => {
       try {
-        await updateBaby(baby.id, {
-          name,
-          birthDate: new Date(birthDateStr),
-          gender,
+        const result = await updateBaby({
+          babyId: baby.id,
+          data: {
+            name,
+            birthDate: new Date(birthDateStr),
+            gender,
+          },
         });
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+        if (result?.validationErrors) {
+          toast.error("Please check the baby details and try again.");
+          return;
+        }
         toast.success("Baby updated successfully!");
         onOpenChange(false);
       } catch (error) {
@@ -82,7 +93,11 @@ export function EditBabyDialog({
   async function handleDelete() {
     startTransition(async () => {
       try {
-        await deleteBaby(baby.id);
+        const result = await deleteBaby({ babyId: baby.id });
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
         toast.success("Baby deleted successfully!");
         onOpenChange(false);
       } catch (error) {
